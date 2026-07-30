@@ -312,7 +312,7 @@
   .output-row{
     display:flex;
     flex-direction: row-reverse;
-    align-items: flex-start;
+    align-items: center;
     gap: 0;
     width: max-content;
     margin: 0 auto;
@@ -339,7 +339,6 @@
     width: 16px; height: 4px; align-self: center;
     background: var(--amber-dim);
     flex-shrink: 0;
-    margin-top: 64px;
   }
   .output-ext-grid{
     display:grid;
@@ -358,6 +357,12 @@
   .empty-state{
     color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center;
   }
+
+  .output-toolbar{
+    display:flex; gap:8px; margin: 0 0 4px;
+    flex-wrap: wrap; align-items:center; justify-content:flex-end;
+  }
+  .output-toolbar button{ font-size: 12.5px; }
 
   /* Icon Picker Modal */
   .modal-overlay{
@@ -441,7 +446,7 @@
   body.output-only .wrap > *:not(#outputSection){
     display: none !important;
   }
-  body.output-only #outputSection h2{
+  body.output-only .output-toolbar{
     display: none;
   }
   body.output-only .output-scroll{
@@ -523,7 +528,10 @@
   <div class="track"></div>
 
   <section id="outputSection">
-    <h2>Output — Train Preview</h2>
+    <div class="output-toolbar">
+      <button class="primary" onclick="downloadOutputPng(event)">⭳ Download PNG</button>
+      <button onclick="copyObsSourceUrl()" id="copyObsBtn">⧉ Copy OBS Source</button>
+    </div>
     <div class="output-scroll">
       <div class="output-row" id="outputRow"></div>
     </div>
@@ -531,7 +539,6 @@
 
   <footer>
     <div class="track"></div>
-    Paths are read relative to this HTML file location.
   </footer>
 
 </div>
@@ -546,6 +553,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 // ---------- Model ----------
 const STORAGE_KEY = 'unrailed2_wagon_builder_state_v3';
@@ -1085,6 +1093,70 @@ function renderOutput(){
 
     out.appendChild(wCard);
   });
+}
+
+// ---------- Export: download output as PNG ----------
+async function downloadOutputPng(evt){
+  const target = document.getElementById('outputRow');
+  if(!target) return;
+  const btn = evt && evt.target;
+  const originalLabel = btn ? btn.textContent : null;
+  if(btn){ btn.textContent = 'Rendering…'; btn.disabled = true; }
+  try{
+    const canvas = await html2canvas(target, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true
+    });
+    const link = document.createElement('a');
+    link.download = 'unrailed2-train-setup.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(err){
+    console.error('PNG export failed:', err);
+    alert('Could not export PNG. See console for details.');
+  }finally{
+    if(btn){ btn.textContent = originalLabel; btn.disabled = false; }
+  }
+}
+
+// ---------- Export: copy OBS Browser Source URL ----------
+function copyObsSourceUrl(){
+  const base = location.href.split('?')[0].split('#')[0];
+  const url = base + '?output=1';
+  const btn = document.getElementById('copyObsBtn');
+  const originalLabel = btn ? btn.textContent : null;
+
+  const showCopied = () => {
+    if(btn){
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = originalLabel; }, 1500);
+    }
+  };
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(showCopied).catch(() => fallbackCopy(url, showCopied));
+  }else{
+    fallbackCopy(url, showCopied);
+  }
+}
+
+function fallbackCopy(text, onSuccess){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try{
+    document.execCommand('copy');
+    onSuccess && onSuccess();
+  }catch(err){
+    console.error('Copy failed:', err);
+    alert('Copy failed. URL: ' + text);
+  }
+  document.body.removeChild(ta);
 }
 
 // ---------- Output-only mode (OBS Browser Source) ----------
