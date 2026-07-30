@@ -25,11 +25,6 @@
         "type": "Pusher",
         "level": 1,
         "path": "Sprites/Icons__Engine_Pusher.png"
-      },
-      {
-        "id": "37",
-        "type": "Atomic",
-        "path": "Sprites/Icons__Engine_Atomic.png"
       }
     ],
     "wagon": [
@@ -200,21 +195,6 @@
         "type": "Versus Constructor",
         "level": 1,
         "path": "Sprites/Icons__VSWagon.png"
-      },
-      {
-        "id": "41",
-        "type": "Light",
-        "path": "Sprites/Icons__LightWagon.png"
-      },
-      {
-        "id": "42",
-        "type": "Task",
-        "path": "Sprites/Icons__TaskWagon.png"
-      },
-      {
-        "id": "43",
-        "type": "Temporary Tools",
-        "path": "Sprites/Icons__TemporaryToolsWagon.png"
       }
     ],
     "ext": [
