@@ -1,0 +1,319 @@
+{
+  "uid": 64,
+  "library": {
+    "engine": [
+      {
+        "id": "1",
+        "type": "Toy",
+        "level": 3,
+        "path": "Sprites/Icons__Engine_Toy.png"
+      },
+      {
+        "id": "5",
+        "type": "Steam",
+        "level": 3,
+        "path": "Sprites/Icons__Engine.png"
+      },
+      {
+        "id": "6",
+        "type": "Ghost",
+        "level": 1,
+        "path": "Sprites/Icons__Engine_Ghost.png"
+      },
+      {
+        "id": "7",
+        "type": "Pusher",
+        "level": 1,
+        "path": "Sprites/Icons__Engine_Pusher.png"
+      },
+      {
+        "id": "37",
+        "type": "Atomic",
+        "path": "Sprites/Icons__Engine_Atomic.png"
+      }
+    ],
+    "wagon": [
+      {
+        "id": "2",
+        "type": "Storage",
+        "level": 1,
+        "path": "Sprites/Icons__BoxWagon.png"
+      },
+      {
+        "id": "10",
+        "type": "Crafter",
+        "level": 1,
+        "path": "Sprites/Icons__CrafterWagon.png"
+      },
+      {
+        "id": "11",
+        "type": "Bridge",
+        "level": 1,
+        "path": "Sprites/Icons__BridgeCrafterWagon.png"
+      },
+      {
+        "id": "12",
+        "type": "Brake Track",
+        "level": 1,
+        "path": "Sprites/Icons__BrakeTrackWagon.png"
+      },
+      {
+        "id": "13",
+        "type": "Brake ",
+        "level": 1,
+        "path": "Sprites/Icons__BrakeWagon.png"
+      },
+      {
+        "id": "14",
+        "type": "Cannon",
+        "level": 1,
+        "path": "Sprites/Icons__ThrowerWagon.png"
+      },
+      {
+        "id": "15",
+        "type": "Carriage",
+        "level": 1,
+        "path": "Sprites/Icons__CarriageWagon.png"
+      },
+      {
+        "id": "16",
+        "type": "Collector",
+        "level": 1,
+        "path": "Sprites/Icons__CollectorWagon.png"
+      },
+      {
+        "id": "17",
+        "type": "Compactor",
+        "level": 1,
+        "path": "Sprites/Icons__CompactorWagon.png"
+      },
+      {
+        "id": "18",
+        "type": "Conveyor Belt",
+        "level": 1,
+        "path": "Sprites/Icons__ConveyorBeltWagon.png"
+      },
+      {
+        "id": "19",
+        "type": "Dynamite",
+        "level": 1,
+        "path": "Sprites/Icons__DynamiteWagon.png"
+      },
+      {
+        "id": "20",
+        "type": "Ghost",
+        "level": 1,
+        "path": "Sprites/Icons__GhpstWagon.png"
+      },
+      {
+        "id": "21",
+        "type": "Mag-Tractor",
+        "level": 1,
+        "path": "Sprites/Icons__MagnetWagon.png"
+      },
+      {
+        "id": "22",
+        "type": "Milk",
+        "level": 1,
+        "path": "Sprites/Icons__MilkWagon.png"
+      },
+      {
+        "id": "23",
+        "type": "Miner",
+        "level": 1,
+        "path": "Sprites/Icons__MinerWagon.png"
+      },
+      {
+        "id": "24",
+        "type": "Slot Machine",
+        "level": 1,
+        "path": "Sprites/Icons__SlotWagon.png"
+      },
+      {
+        "id": "25",
+        "type": "Supercharger",
+        "level": 1,
+        "path": "Sprites/Icons__SuperchargerWagon.png"
+      },
+      {
+        "id": "26",
+        "type": "Tank",
+        "level": 1,
+        "path": "Sprites/Icons__TankWagon.png"
+      },
+      {
+        "id": "27",
+        "type": "Torpedo",
+        "level": 1,
+        "path": "Sprites/Icons__TorpedoWagon.png"
+      },
+      {
+        "id": "28",
+        "type": "Transformer",
+        "level": 1,
+        "path": "Sprites/Icons__TransformerWagon.png"
+      },
+      {
+        "id": "29",
+        "type": "Turret",
+        "level": 1,
+        "path": "Sprites/Icons__TurretWagon.png"
+      },
+      {
+        "id": "30",
+        "type": "Piggybank",
+        "level": 1,
+        "path": "Sprites/Icons__PiggybankWagon.png"
+      },
+      {
+        "id": "31",
+        "type": "Wagon Printer",
+        "level": 1,
+        "path": "Sprites/Icons__PrinterWagon.png"
+      },
+      {
+        "id": "32",
+        "type": "Cartridge Toaster",
+        "level": 1,
+        "path": "Sprites/Icons__ToasterWagon.png"
+      },
+      {
+        "id": "33",
+        "type": "Hexnut Tree Cart",
+        "level": 1,
+        "path": "Sprites/Icons__HexnutWagon.png"
+      },
+      {
+        "id": "34",
+        "type": "Mimic",
+        "level": 1,
+        "path": "Sprites/Icons__ImitatorWagon.png"
+      },
+      {
+        "id": "35",
+        "type": "Teleporter",
+        "level": 1,
+        "path": "Sprites/Icons__TeleporterWagon.png"
+      },
+      {
+        "id": "36",
+        "type": "Versus Constructor",
+        "level": 1,
+        "path": "Sprites/Icons__VSWagon.png"
+      },
+      {
+        "id": "41",
+        "type": "Light",
+        "path": "Sprites/Icons__LightWagon.png"
+      },
+      {
+        "id": "42",
+        "type": "Task",
+        "path": "Sprites/Icons__TaskWagon.png"
+      },
+      {
+        "id": "43",
+        "type": "Temporary Tools",
+        "path": "Sprites/Icons__TemporaryToolsWagon.png"
+      }
+    ],
+    "ext": [
+      {
+        "id": "3",
+        "name": "Storage Ext.",
+        "path": "UnofficialSprites/StoragePull.png",
+        "type": "Storage-Pull"
+      },
+      {
+        "id": "44",
+        "type": "Storage-Push",
+        "path": "UnofficialSprites/StoragePush.png"
+      },
+      {
+        "id": "46",
+        "type": "Front-Pull",
+        "path": "Sprites/Icons__PullFromPrevious.png"
+      },
+      {
+        "id": "47",
+        "type": "Auto-Drop",
+        "path": "Sprites/Icons__AutoDrop.png"
+      },
+      {
+        "id": "48",
+        "type": "Magnet-Pick",
+        "path": "Sprites/Icons__MagnetPick.png"
+      },
+      {
+        "id": "49",
+        "type": "Ghost",
+        "path": "Sprites/Icons__Ghost.png"
+      },
+      {
+        "id": "50",
+        "type": "Hydrocharge",
+        "path": "Sprites/Icons__WaterSupercharge.png"
+      },
+      {
+        "id": "51",
+        "type": "Supercharge",
+        "path": "Sprites/Icons__Supercharge.png"
+      },
+      {
+        "id": "52",
+        "type": "Range-Extension",
+        "path": "Sprites/Icons__RangeIncrease.png"
+      },
+      {
+        "id": "53",
+        "type": "Speed-Boost",
+        "path": "Sprites/Icons__SpeedIncrease.png"
+      },
+      {
+        "id": "54",
+        "type": "Stack-Boost",
+        "path": "Sprites/Icons__StackIncrease.png"
+      },
+      {
+        "id": "55",
+        "type": "Time-Extension",
+        "path": "Sprites/Icons__TimeIncrease.png"
+      },
+      {
+        "id": "56",
+        "type": "Key",
+        "path": "Sprites/Icons__Key.png"
+      },
+      {
+        "id": "57",
+        "type": "Brakes",
+        "path": "Sprites/Icons__Brake.png"
+      },
+      {
+        "id": "59",
+        "type": "Decharge",
+        "path": "Sprites/Icons__SuperchargeDecrease.png"
+      },
+      {
+        "id": "60",
+        "type": "Range-Reduction",
+        "path": "Sprites/Icons__RangeDecrease.png"
+      },
+      {
+        "id": "61",
+        "type": "Speed-Reduction",
+        "path": "Sprites/Icons__SpeedDecrease.png"
+      },
+      {
+        "id": "62",
+        "type": "Stack-Reduction",
+        "path": "Sprites/Icons__StackDecrease.png"
+      },
+      {
+        "id": "63",
+        "type": "Time-Reduction",
+        "path": "Sprites/Icons__TimeDecrease.png"
+      }
+    ]
+  }
+}

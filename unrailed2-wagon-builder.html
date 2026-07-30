@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unrailed 2 — Wagon Setup Builder</title>
+<style>
+  :root{
+    --bg: #10161d;
+    --panel: #1a232c;
+    --panel-2: #202b35;
+    --line: #2c3946;
+    --tie: #4a3728;
+    --text: #e7ecf2;
+    --muted: #8a97a6;
+    --amber: #ffb627;
+    --amber-dim: #8a6c2c;
+    --green: #4bd18a;
+    --danger: #e2584f;
+    --radius: 6px;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 50% -200px, #1c2733 0%, var(--bg) 60%);
+    color:var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 32px 24px 80px;
+  }
+  h1,h2,h3{
+    font-family: 'Bahnschrift', 'Segoe UI Semibold', system-ui, sans-serif;
+    font-weight: 600;
+    margin: 0;
+  }
+  .wrap{ max-width: 1200px; margin: 0 auto; }
+  header{ text-align:center; margin-bottom: 18px; }
+  header h1{ font-size: 28px; letter-spacing: 0.5px; color: var(--text); }
+  header p{ color: var(--muted); margin: 6px 0 0; font-size: 14px; }
+
+  .track{
+    height: 14px;
+    margin: 22px 0;
+    background:
+      repeating-linear-gradient(90deg, var(--tie) 0px, var(--tie) 10px, transparent 10px, transparent 26px);
+    position: relative;
+    opacity: 0.8;
+  }
+  .track::before, .track::after{
+    content:"";
+    position:absolute; left:0; right:0; height:2px; background: var(--amber-dim);
+  }
+  .track::before{ top:4px; }
+  .track::after{ bottom:4px; }
+
+  section > h2, .section-title{
+    font-size: 16px;
+    color: var(--amber);
+    margin-bottom: 14px;
+  }
+
+  details.panel{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 4px 18px 18px;
+    margin-bottom: 20px;
+  }
+  details.panel summary{
+    cursor:pointer;
+    padding: 14px 0;
+    font-family: 'Bahnschrift', 'Segoe UI Semibold', sans-serif;
+    font-size: 17px;
+    color: var(--amber);
+    list-style: none;
+    display:flex; align-items:center; gap:8px;
+  }
+  details.panel summary::-webkit-details-marker{ display:none; }
+  details.panel summary::before{ content: "▸"; transition: transform .15s; }
+  details.panel[open] summary::before{ transform: rotate(90deg); }
+  summary .hint{ color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left:auto; }
+
+  .lib-toolbar{
+    display:flex; gap:8px; margin: 0 0 14px;
+    flex-wrap: wrap; align-items:center;
+  }
+  .lib-toolbar .save-state{ color: var(--muted); font-size: 11.5px; }
+
+  .lib-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 900px){ .lib-grid{ grid-template-columns: 1fr; } }
+
+  .lib-col h3{ font-size: 14px; color: var(--text); margin-bottom: 8px; }
+  .lib-col .lib-sub{ color: var(--muted); font-size: 11.5px; margin: -4px 0 10px; }
+
+  .lib-row{
+    display:grid;
+    grid-template-columns: 1fr 1.6fr auto;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .lib-row input{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 12.5px;
+    width: 100%;
+  }
+  .lib-row input.path{ font-family: 'Consolas', 'SFMono-Regular', monospace; }
+  .lib-row input:focus{ outline: none; border-color: var(--amber-dim); }
+
+  button{
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+  button:hover{ border-color: var(--amber-dim); }
+  button.icon-btn{ padding: 4px 8px; color: var(--danger); }
+  button.add-btn{
+    margin-top: 4px;
+    color: var(--amber);
+    border-color: var(--amber-dim);
+    width:100%;
+  }
+  button.primary{
+    background: var(--amber);
+    color: #241a06;
+    border-color: var(--amber);
+    font-weight:600;
+  }
+  button.primary:hover{ filter: brightness(1.08); }
+
+  .builder-toolbar{
+    display:flex; align-items:center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .builder-toolbar .count{ color: var(--muted); font-size: 13px; }
+
+  .engine-card, .wagon-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px;
+    position: relative;
+  }
+  .engine-row{ display:flex; align-items:center; gap:16px; margin-bottom: 20px; }
+  .engine-card{ display:flex; align-items:center; gap:14px; flex:1; padding-right: 60px; }
+  
+  .slot-preview{
+    width: 74px; height: 74px;
+    background: var(--panel-2);
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .slot-preview.clickable{ cursor: pointer; }
+  .slot-preview.clickable:hover{ border-color: var(--amber); background: #24303c; }
+  .slot-preview img{ max-width:100%; max-height:100%; object-fit:contain; }
+  .slot-preview.placeholder{ color: var(--muted); font-size: 10px; text-align:center; padding:2px; }
+  .engine-card .slot-preview{ width: 104px; height: 104px; }
+  .wagon-top .slot-preview{ width: 86px; height: 86px; }
+
+  .card-badge{
+    position:absolute; top:8px; right:8px;
+    background: var(--panel-2);
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-size: 11px;
+    font-family: 'Consolas', 'SFMono-Regular', monospace;
+    padding: 2px 7px;
+    border-radius: 10px;
+    z-index: 1;
+  }
+  .card-badge-inline{
+    background: var(--panel-2);
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-size: 11px;
+    font-family: 'Consolas', 'SFMono-Regular', monospace;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .meta-label{
+    display:block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px;
+  }
+  .meta-field{ display: flex; flex-direction: column; }
+  .level-input{
+    width: 80px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 12.5px;
+  }
+  .level-input:focus{ outline:none; border-color: var(--amber-dim); }
+
+  .select-btn{
+    text-align: left;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 12.5px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .select-btn:hover{ border-color: var(--amber-dim); }
+
+  /* Horizontal scroll & drag container */
+  .wagons-scroll{
+    width: 100%;
+    overflow-x: auto;
+    padding: 10px 0;
+  }
+  .wagons-row{
+    display:flex; 
+    gap: 16px; 
+    width: max-content;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  
+  .wagon-card{
+    min-width: 250px;
+    max-width: 270px;
+    display:flex; flex-direction:column; gap:10px;
+    padding: 12px;
+    cursor: grab;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .wagon-card:active{ cursor: grabbing; }
+  .wagon-card.dragging{ opacity: 0.4; }
+  .wagon-card.drag-over{
+    border-color: var(--amber);
+    box-shadow: 0 0 12px rgba(255, 182, 39, 0.35);
+  }
+
+  /* Header inside wagon card to prevent text collision */
+  .wagon-card-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2px;
+  }
+  .wagon-title-area{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .drag-handle{
+    color: var(--muted);
+    font-size: 14px;
+    cursor: grab;
+  }
+  .wagon-title-area h3{ font-size: 13px; color: var(--amber); }
+  .wagon-controls{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .wagon-top{ display:flex; gap:12px; align-items:flex-start; }
+
+  .ext-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .ext-slot{
+    display:flex; flex-direction:column; gap:4px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 5px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ext-slot:hover{ border-color: var(--amber); background: #273442; }
+  .ext-slot .slot-preview{ width:100%; height: 50px; pointer-events: none; }
+  .ext-name{
+    font-size: 10.5px;
+    color: var(--muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Output section */
+  .output-scroll{
+    width: 100%;
+    overflow-x: auto;
+    padding: 14px 0;
+  }
+  .output-row{
+    display:flex;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    gap: 0;
+    width: max-content;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .output-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px 10px 10px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .output-engine{ width: 132px; text-align:center; }
+  .output-wagon{ width: 230px; }
+  .output-card .slot-preview{ margin: 0 auto; pointer-events: none; }
+  .output-engine .slot-preview{ width: 104px; height: 104px; }
+  .output-wagon .slot-preview{ width: 90px; height: 90px; margin-bottom: 8px; }
+  .output-card .card-label{
+    text-align:center; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; margin-top: 6px;
+  }
+  .coupler{
+    width: 16px; height: 4px; align-self: center;
+    background: var(--amber-dim);
+    flex-shrink: 0;
+    margin-top: 64px;
+  }
+  .output-ext-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+  .output-ext-slot{
+    width:100%; height: 42px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .output-ext-slot img{ max-width:100%; max-height:100%; object-fit:contain; }
+  .empty-state{
+    color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center;
+  }
+
+  /* Icon Picker Modal */
+  .modal-overlay{
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(10, 14, 18, 0.8);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.open{ display: flex; }
+  .modal-content{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    width: 480px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .modal-header{
+    display:flex; justify-space-between; align-items:center;
+    margin-bottom: 16px;
+  }
+  .modal-header h3{ color: var(--amber); font-size: 16px; }
+  .modal-close{
+    background:none; border:none; color: var(--muted); font-size: 18px; cursor:pointer; padding:2px 6px;
+  }
+  .modal-close:hover{ color: var(--text); }
+  .picker-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+  }
+  .picker-item{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .picker-item:hover{
+    border-color: var(--amber);
+    transform: translateY(-2px);
+  }
+  .picker-item.active{
+    border-color: var(--amber);
+    background: rgba(255, 182, 39, 0.1);
+  }
+  .picker-item .picker-preview{
+    width: 54px; height: 54px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .picker-item img{ max-width:100%; max-height:100%; object-fit:contain; }
+  .picker-item .picker-label{
+    font-size: 11.5px; text-align: center; color: var(--text); word-break: break-word;
+  }
+
+  footer{ text-align:center; color: var(--muted); font-size: 12px; margin-top: 30px; }
+  footer .track{ margin: 20px 0 14px; }
+
+  /* Output-only mode (OBS Browser Source) */
+  body.output-only{
+    background: transparent;
+    padding: 0;
+  }
+  body.output-only .wrap{
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  body.output-only .wrap > *:not(#outputSection){
+    display: none !important;
+  }
+  body.output-only #outputSection h2{
+    display: none;
+  }
+  body.output-only .output-scroll{
+    padding: 12px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>UNRAILED 2 — WAGON SETUP BUILDER</h1>
+    <p>Register your image files below, then assemble an engine + wagon consist with extensions.</p>
+  </header>
+
+  <div class="track"></div>
+
+  <details class="panel" id="libraryPanel" open>
+    <summary>Image Library <span class="hint">register PNG paths for engine, wagons and extensions</span></summary>
+
+    <div class="lib-toolbar">
+      <button class="primary" onclick="exportLibrary()">⭳ Save library</button>
+      <button onclick="document.getElementById('importLibraryFile').click()">⭱ Load library</button>
+      <input type="file" id="importLibraryFile" accept="application/json" style="display:none" onchange="importLibrary(this.files[0])">
+      <span class="save-state">Save to JSON in the same folder as this HTML file for OBS auto-sync.</span>
+    </div>
+
+    <div class="lib-grid">
+      <div class="lib-col">
+        <h3>Engine</h3>
+        <div class="lib-sub">one row per engine type</div>
+        <div id="libEngine"></div>
+        <button class="add-btn" onclick="addLibRow('engine')">+ Add engine image</button>
+      </div>
+      <div class="lib-col">
+        <h3>Wagons</h3>
+        <div class="lib-sub">one row per wagon type</div>
+        <div id="libWagon"></div>
+        <button class="add-btn" onclick="addLibRow('wagon')">+ Add wagon image</button>
+      </div>
+      <div class="lib-col">
+        <h3>Extensions</h3>
+        <div class="lib-sub">one row per extension type</div>
+        <div id="libExt"></div>
+        <button class="add-btn" onclick="addLibRow('ext')">+ Add extension image</button>
+      </div>
+    </div>
+  </details>
+
+  <div class="track"></div>
+
+  <section id="builderSection">
+    <div class="lib-toolbar">
+      <button class="primary" onclick="exportSetup()">⭳ Save setup</button>
+      <button onclick="document.getElementById('importSetupFile').click()">⭱ Load setup</button>
+      <input type="file" id="importSetupFile" accept="application/json" style="display:none" onchange="importSetup(this.files[0])">
+      <span class="save-state">Save setup JSON to the same folder to update your OBS overlay.</span>
+    </div>
+
+    <div class="engine-row">
+      <div class="engine-card" id="engineCard">
+        <div class="slot-preview clickable" id="enginePreview" title="Click to choose Engine" onclick="openPicker('engine')"></div>
+        <div class="engine-meta" style="flex:1">
+          <div class="meta-field">
+            <label class="meta-label">Engine Type</label>
+            <button class="select-btn" id="engineTypeBtn" onclick="openPicker('engine')">— select —</button>
+          </div>
+          <div class="meta-field" style="margin-top: 10px;">
+            <label class="meta-label">Level</label>
+            <input type="number" class="level-input" id="engineLevelInput" min="1" step="1" value="1" title="Level">
+          </div>
+        </div>
+        <div class="card-badge" id="engineBadge">Lv 1</div>
+      </div>
+    </div>
+
+    <div class="builder-toolbar">
+      <button class="primary" onclick="addWagon()">+ Add wagon</button>
+      <span class="count" id="wagonCount">0 wagons</span>
+    </div>
+
+    <div class="wagons-scroll">
+      <div class="wagons-row" id="wagonsRow"></div>
+    </div>
+  </section>
+
+  <div class="track"></div>
+
+  <section id="outputSection">
+    <h2>Output — Train Preview <span style="color:var(--muted); font-weight:400; font-size:12.5px;">(engine on the right, wagons trailing to the left)</span></h2>
+    <div class="output-scroll">
+      <div class="output-row" id="outputRow"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="track"></div>
+    Paths are read relative to this HTML file location.
+  </footer>
+
+</div>
+
+<div class="modal-overlay" id="pickerModal" onclick="closePickerOnOverlay(event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="pickerTitle">Select Item</h3>
+      <button class="modal-close" onclick="closePicker()">✕</button>
+    </div>
+    <div class="picker-grid" id="pickerGrid"></div>
+  </div>
+</div>
+
+<script>
+// ---------- Model ----------
+const STORAGE_KEY = 'unrailed2_wagon_builder_state_v3';
+let uid = 1;
+const nextId = () => String(uid++);
+
+let library = {
+  engine: [ { id: nextId(), type: 'Standard', path: 'images/engine_standard.png' } ],
+  wagon:  [ { id: nextId(), type: 'Basic', path: 'images/wagon_basic.png' } ],
+  ext:    [ { id: nextId(), type: 'Storage Ext.', path: 'images/ext_storage.png' } ],
+};
+
+let engineChoice = { id: library.engine[0].id, level: 1 };
+let wagons = []; // { id, wagonId: '', level: 1, exts: [extId or '' x12] }
+
+const EXT_SLOTS = 12;
+let currentPickerTarget = null;
+let draggedWagonIndex = null;
+
+// ---------- Persistence ----------
+function persist(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ uid, library, engineChoice, wagons }));
+  }catch(e){ /* ignore */ }
+}
+
+function loadPersisted(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(!data || !data.library) return false;
+    uid = data.uid || uid;
+    library = data.library;
+    engineChoice = data.engineChoice || engineChoice;
+    wagons = data.wagons || [];
+    return true;
+  }catch(e){ return false; }
+}
+
+function downloadJson(filename, data){
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportLibrary(){ downloadJson('unrailed2-image-library.json', { uid, library }); }
+
+function importLibrary(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data || !data.library) throw new Error('bad file');
+      uid = Math.max(uid, data.uid || 0);
+      library = data.library;
+      persist();
+      renderLibrary();
+    }catch(err){ alert('Could not read library file.'); }
+  };
+  reader.readAsText(file);
+}
+
+function exportSetup(){ downloadJson('unrailed2-wagon-setup.json', { engineChoice, wagons }); }
+
+function importSetup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data || !('wagons' in data)) throw new Error('bad file');
+      engineChoice = data.engineChoice || { id:'', level:1 };
+      wagons = data.wagons || [];
+      persist();
+      renderEngine();
+      renderWagons();
+    }catch(err){ alert('Could not read setup file.'); }
+  };
+  reader.readAsText(file);
+}
+
+// ---------- Helpers ----------
+function findById(type, id){ return library[type].find(item => item.id === id); }
+function itemLabel(item){ return item.type; }
+
+function buildPreview(container, type, id){
+  container.innerHTML = '';
+  const item = id ? findById(type, id) : null;
+  if(!item || !item.path){
+    container.classList.add('placeholder');
+    container.textContent = item ? '(no path)' : '—';
+    return;
+  }
+  container.classList.remove('placeholder');
+  const img = document.createElement('img');
+  img.src = item.path;
+  img.alt = itemLabel(item);
+  img.addEventListener('error', () => {
+    container.classList.add('placeholder');
+    container.textContent = itemLabel(item) + ' (missing)';
+    img.remove();
+  });
+  container.appendChild(img);
+}
+
+// ---------- Library rendering ----------
+function renderLibrary(){
+  renderLibCol('engine', document.getElementById('libEngine'));
+  renderLibCol('wagon', document.getElementById('libWagon'));
+  renderLibCol('ext', document.getElementById('libExt'));
+  renderEngine();
+  renderWagons();
+  persist();
+}
+
+function renderLibCol(libType, container){
+  container.innerHTML = '';
+  library[libType].forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'lib-row';
+
+    const typeInput = document.createElement('input');
+    typeInput.value = item.type;
+    typeInput.placeholder = 'Type';
+    typeInput.addEventListener('input', (e) => {
+      item.type = e.target.value;
+      renderEngine();
+      renderWagons();
+      persist();
+    });
+
+    const pathInput = document.createElement('input');
+    pathInput.className = 'path';
+    pathInput.value = item.path;
+    pathInput.placeholder = 'images/example.png';
+    pathInput.addEventListener('input', (e) => {
+      item.path = e.target.value;
+      renderEngine();
+      renderWagons();
+      persist();
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'icon-btn';
+    delBtn.textContent = '✕';
+    delBtn.title = 'Remove row';
+    delBtn.addEventListener('click', () => {
+      library[libType] = library[libType].filter(i => i.id !== item.id);
+      renderLibrary();
+    });
+
+    row.appendChild(typeInput);
+    row.appendChild(pathInput);
+    row.appendChild(delBtn);
+    container.appendChild(row);
+  });
+}
+
+function addLibRow(libType){
+  library[libType].push({ id: nextId(), type: '', path: '' });
+  renderLibrary();
+}
+
+// ---------- Visual Icon Picker ----------
+function openPicker(category, wagonId = null, extIndex = null){
+  currentPickerTarget = { category, wagonId, extIndex };
+  const modal = document.getElementById('pickerModal');
+  const title = document.getElementById('pickerTitle');
+  const grid = document.getElementById('pickerGrid');
+
+  const catNames = { engine: 'Engine', wagon: 'Wagon', ext: 'Extension' };
+  title.textContent = `Select ${catNames[category] || 'Item'}`;
+  grid.innerHTML = '';
+
+  const activeId = getSelectedId();
+
+  if(category === 'ext'){
+    const noneItem = document.createElement('div');
+    noneItem.className = 'picker-item' + (!activeId ? ' active' : '');
+    noneItem.innerHTML = `
+      <div class="picker-preview slot-preview placeholder">Empty</div>
+      <div class="picker-label">None</div>
+    `;
+    noneItem.onclick = () => selectPickerItem('');
+    grid.appendChild(noneItem);
+  }
+
+  const items = library[category] || [];
+  items.forEach(item => {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'picker-item' + (item.id === activeId ? ' active' : '');
+
+    const prevDiv = document.createElement('div');
+    prevDiv.className = 'picker-preview';
+    buildPreview(prevDiv, category, item.id);
+
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'picker-label';
+    labelDiv.textContent = item.type || 'Unnamed';
+
+    itemEl.appendChild(prevDiv);
+    itemEl.appendChild(labelDiv);
+    itemEl.onclick = () => selectPickerItem(item.id);
+    grid.appendChild(itemEl);
+  });
+
+  if(items.length === 0 && category !== 'ext'){
+    grid.innerHTML = `<div style="color:var(--muted); font-size:13px; grid-column:1/-1; text-align:center; padding: 20px 0;">No items found in library. Add them above!</div>`;
+  }
+
+  modal.classList.add('open');
+}
+
+function getSelectedId(){
+  if(!currentPickerTarget) return null;
+  const { category, wagonId, extIndex } = currentPickerTarget;
+  if(category === 'engine') return engineChoice.id;
+  if(category === 'wagon'){
+    const w = wagons.find(w => w.id === wagonId);
+    return w ? w.wagonId : null;
+  }
+  if(category === 'ext'){
+    const w = wagons.find(w => w.id === wagonId);
+    return (w && extIndex !== null) ? w.exts[extIndex] : null;
+  }
+  return null;
+}
+
+function selectPickerItem(id){
+  if(!currentPickerTarget) return;
+  const { category, wagonId, extIndex } = currentPickerTarget;
+  if(category === 'engine'){
+    engineChoice.id = id;
+    renderEngine();
+  } else if(category === 'wagon'){
+    const w = wagons.find(w => w.id === wagonId);
+    if(w) w.wagonId = id;
+    renderWagons();
+  } else if(category === 'ext'){
+    const w = wagons.find(w => w.id === wagonId);
+    if(w && extIndex !== null) w.exts[extIndex] = id;
+    renderWagons();
+  }
+  persist();
+  closePicker();
+}
+
+function closePicker(){
+  document.getElementById('pickerModal').classList.remove('open');
+  currentPickerTarget = null;
+}
+
+function closePickerOnOverlay(e){
+  if(e.target.id === 'pickerModal') closePicker();
+}
+
+// ---------- Engine ----------
+function renderEngine(){
+  const currentItem = findById('engine', engineChoice.id);
+  const typeBtn = document.getElementById('engineTypeBtn');
+  if(typeBtn){
+    typeBtn.textContent = currentItem ? currentItem.type : '— select engine —';
+  }
+
+  const levelInput = document.getElementById('engineLevelInput');
+  levelInput.value = engineChoice.level || 1;
+  levelInput.oninput = (e) => {
+    engineChoice.level = e.target.value;
+    document.getElementById('engineBadge').textContent = 'Lv ' + (engineChoice.level || '—');
+    persist();
+    renderOutput();
+  };
+
+  buildPreview(document.getElementById('enginePreview'), 'engine', engineChoice.id);
+  document.getElementById('engineBadge').textContent = 'Lv ' + (engineChoice.level || '—');
+  renderOutput();
+}
+
+// ---------- Wagons & Drag-and-Drop ----------
+function addWagon(){
+  wagons.push({ id: nextId(), wagonId: '', level: 1, exts: new Array(EXT_SLOTS).fill('') });
+  renderWagons();
+  persist();
+}
+
+function removeWagon(id){
+  wagons = wagons.filter(w => w.id !== id);
+  renderWagons();
+  persist();
+}
+
+function renderWagons(){
+  const row = document.getElementById('wagonsRow');
+  row.innerHTML = '';
+  document.getElementById('wagonCount').textContent =
+    wagons.length + (wagons.length === 1 ? ' wagon' : ' wagons');
+
+  wagons.forEach((w, idx) => {
+    const card = document.createElement('div');
+    card.className = 'wagon-card';
+    card.setAttribute('draggable', 'true');
+
+    // Drag-and-drop events
+    card.addEventListener('dragstart', (e) => {
+      draggedWagonIndex = idx;
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('dragging');
+    });
+
+    card.addEventListener('dragend', () => {
+      draggedWagonIndex = null;
+      card.classList.remove('dragging');
+      document.querySelectorAll('.wagon-card').forEach(c => c.classList.remove('drag-over'));
+    });
+
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      card.classList.add('drag-over');
+    });
+
+    card.addEventListener('dragleave', () => {
+      card.classList.remove('drag-over');
+    });
+
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if (draggedWagonIndex !== null && draggedWagonIndex !== idx) {
+        const [dragged] = wagons.splice(draggedWagonIndex, 1);
+        wagons.splice(idx, 0, dragged);
+        renderWagons();
+        persist();
+      }
+    });
+
+    // Clean flexbox header bar (fixes overlap issue)
+    const header = document.createElement('div');
+    header.className = 'wagon-card-header';
+
+    const titleArea = document.createElement('div');
+    titleArea.className = 'wagon-title-area';
+    titleArea.title = 'Click & drag to reorder wagon';
+    titleArea.innerHTML = `<span class="drag-handle">⠿</span><h3>Wagon ${idx + 1}</h3>`;
+
+    const controls = document.createElement('div');
+    controls.className = 'wagon-controls';
+
+    const badge = document.createElement('div');
+    badge.className = 'card-badge-inline';
+    badge.textContent = 'Lv ' + (w.level || '—');
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'icon-btn wagon-del';
+    delBtn.textContent = '✕';
+    delBtn.title = 'Remove wagon';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeWagon(w.id);
+    });
+
+    controls.appendChild(badge);
+    controls.appendChild(delBtn);
+    header.appendChild(titleArea);
+    header.appendChild(controls);
+    card.appendChild(header);
+
+    // Wagon top section
+    const top = document.createElement('div');
+    top.className = 'wagon-top';
+
+    const preview = document.createElement('div');
+    preview.className = 'slot-preview clickable';
+    preview.title = 'Click to choose wagon type';
+    preview.onclick = () => openPicker('wagon', w.id);
+    buildPreview(preview, 'wagon', w.wagonId);
+
+    const metaWrap = document.createElement('div');
+    metaWrap.style.flex = '1';
+    metaWrap.style.minWidth = '0';
+
+    const currentWagon = findById('wagon', w.wagonId);
+    
+    // Type selection
+    const typeLabel = document.createElement('label');
+    typeLabel.className = 'meta-label';
+    typeLabel.textContent = 'Wagon Type';
+
+    const typeBtn = document.createElement('button');
+    typeBtn.type = 'button';
+    typeBtn.className = 'select-btn';
+    typeBtn.textContent = currentWagon ? currentWagon.type : '— select wagon —';
+    typeBtn.onclick = () => openPicker('wagon', w.id);
+
+    // Level input (stacked below type)
+    const levelLabel = document.createElement('label');
+    levelLabel.className = 'meta-label';
+    levelLabel.style.marginTop = '8px';
+    levelLabel.textContent = 'Level';
+
+    const levelInput = document.createElement('input');
+    levelInput.type = 'number';
+    levelInput.min = '1';
+    levelInput.step = '1';
+    levelInput.className = 'level-input';
+    levelInput.value = w.level || 1;
+    levelInput.title = 'Level';
+    levelInput.addEventListener('input', (e) => {
+      w.level = e.target.value;
+      badge.textContent = 'Lv ' + (w.level || '—');
+      persist();
+      renderOutput();
+    });
+
+    metaWrap.appendChild(typeLabel);
+    metaWrap.appendChild(typeBtn);
+    metaWrap.appendChild(levelLabel);
+    metaWrap.appendChild(levelInput);
+
+    top.appendChild(preview);
+    top.appendChild(metaWrap);
+    card.appendChild(top);
+
+    // Extensions grid (3x4 layout)
+    const grid = document.createElement('div');
+    grid.className = 'ext-grid';
+    for(let i = 0; i < EXT_SLOTS; i++){
+      const slot = document.createElement('div');
+      slot.className = 'ext-slot';
+      slot.title = `Click to change slot ${i+1}`;
+      slot.onclick = () => openPicker('ext', w.id, i);
+
+      const sPreview = document.createElement('div');
+      sPreview.className = 'slot-preview';
+      buildPreview(sPreview, 'ext', w.exts[i]);
+
+      const extItem = findById('ext', w.exts[i]);
+      const extName = document.createElement('div');
+      extName.className = 'ext-name';
+      extName.textContent = extItem ? extItem.type : 'Empty';
+
+      slot.appendChild(sPreview);
+      slot.appendChild(extName);
+      grid.appendChild(slot);
+    }
+    card.appendChild(grid);
+
+    row.appendChild(card);
+  });
+
+  renderOutput();
+}
+
+// ---------- Output Preview ----------
+function renderOutput(){
+  const out = document.getElementById('outputRow');
+  if(!out) return;
+  out.innerHTML = '';
+
+  if(wagons.length === 0 && !engineChoice.id){
+    out.innerHTML = '<div class="empty-state">Nothing to show yet — pick an engine and add a wagon above.</div>';
+    return;
+  }
+
+  // Engine card
+  const engineCard = document.createElement('div');
+  engineCard.className = 'output-card output-engine';
+  const engineBadge = document.createElement('div');
+  engineBadge.className = 'card-badge';
+  engineBadge.textContent = 'Lv ' + (engineChoice.level || '—');
+  const enginePrev = document.createElement('div');
+  enginePrev.className = 'slot-preview';
+  buildPreview(enginePrev, 'engine', engineChoice.id);
+  const engineLbl = document.createElement('div');
+  engineLbl.className = 'card-label';
+  engineLbl.textContent = 'Engine';
+  engineCard.appendChild(engineBadge);
+  engineCard.appendChild(enginePrev);
+  engineCard.appendChild(engineLbl);
+  out.appendChild(engineCard);
+
+  wagons.forEach((w, idx) => {
+    const coupler = document.createElement('div');
+    coupler.className = 'coupler';
+    out.appendChild(coupler);
+
+    const wCard = document.createElement('div');
+    wCard.className = 'output-card output-wagon';
+
+    const wBadge = document.createElement('div');
+    wBadge.className = 'card-badge';
+    wBadge.textContent = 'Lv ' + (w.level || '—');
+    wCard.appendChild(wBadge);
+
+    const wPrev = document.createElement('div');
+    wPrev.className = 'slot-preview';
+    buildPreview(wPrev, 'wagon', w.wagonId);
+    wCard.appendChild(wPrev);
+
+    const wLbl = document.createElement('div');
+    wLbl.className = 'card-label';
+    wLbl.textContent = 'Wagon ' + (idx + 1);
+    wCard.appendChild(wLbl);
+
+    const extGrid = document.createElement('div');
+    extGrid.className = 'output-ext-grid';
+    extGrid.style.marginTop = '8px';
+    for(let i = 0; i < EXT_SLOTS; i++){
+      const item = w.exts[i] ? findById('ext', w.exts[i]) : null;
+      if(!item) continue;
+
+      const slot = document.createElement('div');
+      slot.className = 'output-ext-slot';
+      const img = document.createElement('img');
+      img.src = item.path;
+      img.alt = item.type;
+      img.addEventListener('error', () => { slot.remove(); });
+      slot.appendChild(img);
+      extGrid.appendChild(slot);
+    }
+    if(extGrid.children.length) wCard.appendChild(extGrid);
+
+    out.appendChild(wCard);
+  });
+}
+
+// ---------- Output-only mode (OBS Browser Source) ----------
+const urlParams = new URLSearchParams(location.search);
+const outputOnlyMode = urlParams.has('output');
+if(outputOnlyMode){ document.body.classList.add('output-only'); }
+
+async function tryFetchJson(url){
+  try{
+    const res = await fetch(url, { cache: 'no-store' });
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){ return null; }
+}
+
+async function pollLiveFiles(){
+  const libData = await tryFetchJson('unrailed2-image-library.json');
+  if(libData && libData.library) library = libData.library;
+
+  const setupData = await tryFetchJson('unrailed2-wagon-setup.json');
+  if(setupData && ('wagons' in setupData)){
+    engineChoice = setupData.engineChoice || engineChoice;
+    wagons = setupData.wagons || [];
+  }
+
+  if(libData || setupData) renderOutput();
+}
+
+if(outputOnlyMode){
+  pollLiveFiles();
+  setInterval(pollLiveFiles, 3000);
+}
+
+// ---------- Init ----------
+const restored = loadPersisted();
+if(!restored && wagons.length === 0){
+  addWagon();
+}
+renderLibrary();
+</script>
+</body>
+</html>
