@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Unrailed 2 — Wagon Setup Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --bg: #10161d;
@@ -36,6 +37,7 @@
   .wrap{ max-width: 1200px; margin: 0 auto; }
   header{ text-align:center; margin-bottom: 18px; }
   header h1{ font-size: 28px; letter-spacing: 0.5px; color: var(--text); }
+  header p{ color: var(--muted); margin: 6px 0 0; font-size: 14px; }
 
   .track{
     height: 14px;
@@ -55,7 +57,6 @@
   section > h2, .section-title{
     font-size: 16px;
     color: var(--amber);
-    margin-bottom: 14px;
   }
 
   details.panel{
@@ -77,11 +78,13 @@
   details.panel summary::-webkit-details-marker{ display:none; }
   details.panel summary::before{ content: "▸"; transition: transform .15s; }
   details.panel[open] summary::before{ transform: rotate(90deg); }
+  summary .hint{ color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left:auto; }
 
   .lib-toolbar{
     display:flex; gap:8px; margin: 0 0 14px;
     flex-wrap: wrap; align-items:center;
   }
+  .lib-toolbar .save-state{ color: var(--muted); font-size: 11.5px; }
 
   .lib-grid{
     display:grid;
@@ -91,6 +94,7 @@
   @media (max-width: 900px){ .lib-grid{ grid-template-columns: 1fr; } }
 
   .lib-col h3{ font-size: 14px; color: var(--text); margin-bottom: 8px; }
+  .lib-col .lib-sub{ color: var(--muted); font-size: 11.5px; margin: -4px 0 10px; }
 
   .lib-row{
     display:grid;
@@ -110,7 +114,7 @@
   .lib-row input.path{ font-family: 'Consolas', 'SFMono-Regular', monospace; }
   .lib-row input:focus{ outline: none; border-color: var(--amber-dim); }
 
-  button{
+  button, .btn-link{
     font-family: inherit;
     cursor: pointer;
     border-radius: 4px;
@@ -119,8 +123,12 @@
     color: var(--text);
     padding: 6px 10px;
     font-size: 12.5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
-  button:hover{ border-color: var(--amber-dim); }
+  button:hover, .btn-link:hover{ border-color: var(--amber-dim); }
   button.icon-btn{ padding: 4px 8px; color: var(--danger); }
   button.add-btn{
     margin-top: 4px;
@@ -250,6 +258,7 @@
     box-shadow: 0 0 12px rgba(255, 182, 39, 0.35);
   }
 
+  /* Header inside wagon card */
   .wagon-card-header{
     display: flex;
     align-items: center;
@@ -304,15 +313,23 @@
   }
 
   /* Output section */
+  .section-header-bar{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
   .output-scroll{
     width: 100%;
     overflow-x: auto;
-    padding: 14px 0;
+    padding: 20px 0;
   }
   .output-row{
     display:flex;
     flex-direction: row-reverse;
-    align-items: flex-start;
+    align-items: center; /* Centered vertically relative to one another */
     gap: 0;
     width: max-content;
     margin: 0 auto;
@@ -336,10 +353,10 @@
     text-transform: uppercase; letter-spacing: .04em; margin-top: 6px;
   }
   .coupler{
-    width: 16px; height: 4px; align-self: center;
+    width: 16px; height: 4px; 
+    align-self: center; /* Centered vertically between wagons */
     background: var(--amber-dim);
     flex-shrink: 0;
-    margin-top: 64px;
   }
   .output-ext-grid{
     display:grid;
@@ -383,7 +400,7 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   }
   .modal-header{
-    display:flex; justify-content:space-between; align-items:center;
+    display:flex; justify-content: space-between; align-items:center;
     margin-bottom: 16px;
   }
   .modal-header h3{ color: var(--amber); font-size: 16px; }
@@ -441,7 +458,7 @@
   body.output-only .wrap > *:not(#outputSection){
     display: none !important;
   }
-  body.output-only #outputSection h2{
+  body.output-only #outputSection .section-header-bar{
     display: none;
   }
   body.output-only .output-scroll{
@@ -454,43 +471,51 @@
 
   <header>
     <h1>UNRAILED 2 — WAGON SETUP BUILDER</h1>
+    <p>Register your image files below, then assemble an engine + wagon consist with extensions.</p>
   </header>
 
   <div class="track"></div>
 
-  <details class="panel" id="libraryPanel" style="display: none;">
-    <summary>Image Library</summary>
+  <details class="panel" id="libraryPanel" open>
+    <summary>Image Library <span class="hint">register PNG paths for engine, wagons and extensions</span></summary>
 
     <div class="lib-toolbar">
       <button class="primary" onclick="exportLibrary()">⭳ Save library</button>
       <button onclick="document.getElementById('importLibraryFile').click()">⭱ Load library</button>
       <input type="file" id="importLibraryFile" accept="application/json" style="display:none" onchange="importLibrary(this.files[0])">
+      <span class="save-state">Save to JSON in the same folder as this HTML file for OBS auto-sync.</span>
     </div>
 
     <div class="lib-grid">
       <div class="lib-col">
         <h3>Engine</h3>
+        <div class="lib-sub">one row per engine type</div>
         <div id="libEngine"></div>
         <button class="add-btn" onclick="addLibRow('engine')">+ Add engine image</button>
       </div>
       <div class="lib-col">
         <h3>Wagons</h3>
+        <div class="lib-sub">one row per wagon type</div>
         <div id="libWagon"></div>
         <button class="add-btn" onclick="addLibRow('wagon')">+ Add wagon image</button>
       </div>
       <div class="lib-col">
         <h3>Extensions</h3>
+        <div class="lib-sub">one row per extension type</div>
         <div id="libExt"></div>
         <button class="add-btn" onclick="addLibRow('ext')">+ Add extension image</button>
       </div>
     </div>
   </details>
 
+  <div class="track"></div>
+
   <section id="builderSection">
     <div class="lib-toolbar">
       <button class="primary" onclick="exportSetup()">⭳ Save setup</button>
       <button onclick="document.getElementById('importSetupFile').click()">⭱ Load setup</button>
       <input type="file" id="importSetupFile" accept="application/json" style="display:none" onchange="importSetup(this.files[0])">
+      <span class="save-state">Save setup JSON to the same folder to update your OBS overlay.</span>
     </div>
 
     <div class="engine-row">
@@ -523,7 +548,14 @@
   <div class="track"></div>
 
   <section id="outputSection">
-    <h2>Output — Train Preview</h2>
+    <div class="section-header-bar">
+      <h2>Train Preview <span style="color:var(--muted); font-weight:400; font-size:12.5px;">(engine on the right, wagons trailing to the left)</span></h2>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <a href="?output" target="_blank" class="btn-link" style="color:var(--amber);" title="Open transparent view for OBS Browser Source">🔗 OBS Link (?output)</a>
+        <button class="primary" onclick="downloadOutputPng()">📷 Download PNG</button>
+      </div>
+    </div>
+
     <div class="output-scroll">
       <div class="output-row" id="outputRow"></div>
     </div>
@@ -531,7 +563,6 @@
 
   <footer>
     <div class="track"></div>
-    Paths are read relative to this HTML file location.
   </footer>
 
 </div>
@@ -559,7 +590,7 @@ let library = {
 };
 
 let engineChoice = { id: library.engine[0].id, level: 1 };
-let wagons = [];
+let wagons = []; // { id, wagonId: '', level: 1, exts: [extId or '' x12] }
 
 const EXT_SLOTS = 12;
 let currentPickerTarget = null;
@@ -635,18 +666,28 @@ function importSetup(file){
   reader.readAsText(file);
 }
 
-// ---------- Auto-load Library File ----------
-async function autoLoadLibrary(){
+// ---------- PNG Export ----------
+async function downloadOutputPng(){
+  const target = document.getElementById('outputRow');
+  if(!target) return;
+  if(typeof html2canvas === 'undefined'){
+    alert('The PNG export component is loading or blocked by your browser.');
+    return;
+  }
   try{
-    const res = await fetch('unrailed2-image-library.json?t=' + Date.now(), { cache: 'no-store' });
-    if(!res.ok) return;
-    const data = await res.json();
-    if(data && data.library){
-      uid = Math.max(uid, data.uid || 0);
-      library = data.library;
-      persist();
-    }
-  }catch(e){ /* ignore if not present */ }
+    const canvas = await html2canvas(target, {
+      backgroundColor: null, // Transparent background for PNG
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+    const a = document.createElement('a');
+    a.download = 'unrailed2-train-setup.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }catch(e){
+    alert('Failed to generate PNG image: ' + e.message);
+  }
 }
 
 // ---------- Helpers ----------
@@ -870,6 +911,7 @@ function renderWagons(){
     card.className = 'wagon-card';
     card.setAttribute('draggable', 'true');
 
+    // Drag-and-drop events
     card.addEventListener('dragstart', (e) => {
       draggedWagonIndex = idx;
       e.dataTransfer.effectAllowed = 'move';
@@ -903,6 +945,7 @@ function renderWagons(){
       }
     });
 
+    // Header bar
     const header = document.createElement('div');
     header.className = 'wagon-card-header';
 
@@ -933,6 +976,7 @@ function renderWagons(){
     header.appendChild(controls);
     card.appendChild(header);
 
+    // Wagon top section
     const top = document.createElement('div');
     top.className = 'wagon-top';
 
@@ -940,195 +984,3 @@ function renderWagons(){
     preview.className = 'slot-preview clickable';
     preview.title = 'Click to choose wagon type';
     preview.onclick = () => openPicker('wagon', w.id);
-    buildPreview(preview, 'wagon', w.wagonId);
-
-    const metaWrap = document.createElement('div');
-    metaWrap.style.flex = '1';
-    metaWrap.style.minWidth = '0';
-
-    const currentWagon = findById('wagon', w.wagonId);
-    
-    const typeLabel = document.createElement('label');
-    typeLabel.className = 'meta-label';
-    typeLabel.textContent = 'Wagon Type';
-
-    const typeBtn = document.createElement('button');
-    typeBtn.type = 'button';
-    typeBtn.className = 'select-btn';
-    typeBtn.textContent = currentWagon ? currentWagon.type : '— select wagon —';
-    typeBtn.onclick = () => openPicker('wagon', w.id);
-
-    const levelLabel = document.createElement('label');
-    levelLabel.className = 'meta-label';
-    levelLabel.style.marginTop = '8px';
-    levelLabel.textContent = 'Level';
-
-    const levelInput = document.createElement('input');
-    levelInput.type = 'number';
-    levelInput.min = '1';
-    levelInput.step = '1';
-    levelInput.className = 'level-input';
-    levelInput.value = w.level || 1;
-    levelInput.title = 'Level';
-    levelInput.addEventListener('input', (e) => {
-      w.level = e.target.value;
-      badge.textContent = 'Lv ' + (w.level || '—');
-      persist();
-      renderOutput();
-    });
-
-    metaWrap.appendChild(typeLabel);
-    metaWrap.appendChild(typeBtn);
-    metaWrap.appendChild(levelLabel);
-    metaWrap.appendChild(levelInput);
-
-    top.appendChild(preview);
-    top.appendChild(metaWrap);
-    card.appendChild(top);
-
-    const grid = document.createElement('div');
-    grid.className = 'ext-grid';
-    for(let i = 0; i < EXT_SLOTS; i++){
-      const slot = document.createElement('div');
-      slot.className = 'ext-slot';
-      slot.title = `Click to change slot ${i+1}`;
-      slot.onclick = () => openPicker('ext', w.id, i);
-
-      const sPreview = document.createElement('div');
-      sPreview.className = 'slot-preview';
-      buildPreview(sPreview, 'ext', w.exts[i]);
-
-      const extItem = findById('ext', w.exts[i]);
-      const extName = document.createElement('div');
-      extName.className = 'ext-name';
-      extName.textContent = extItem ? extItem.type : 'Empty';
-
-      slot.appendChild(sPreview);
-      slot.appendChild(extName);
-      grid.appendChild(slot);
-    }
-    card.appendChild(grid);
-
-    row.appendChild(card);
-  });
-
-  renderOutput();
-}
-
-// ---------- Output Preview ----------
-function renderOutput(){
-  const out = document.getElementById('outputRow');
-  if(!out) return;
-  out.innerHTML = '';
-
-  if(wagons.length === 0 && !engineChoice.id){
-    out.innerHTML = '<div class="empty-state">Nothing to show yet — pick an engine and add a wagon above.</div>';
-    return;
-  }
-
-  const engineCard = document.createElement('div');
-  engineCard.className = 'output-card output-engine';
-  const engineBadge = document.createElement('div');
-  engineBadge.className = 'card-badge';
-  engineBadge.textContent = 'Lv ' + (engineChoice.level || '—');
-  const enginePrev = document.createElement('div');
-  enginePrev.className = 'slot-preview';
-  buildPreview(enginePrev, 'engine', engineChoice.id);
-  const engineLbl = document.createElement('div');
-  engineLbl.className = 'card-label';
-  engineLbl.textContent = 'Engine';
-  engineCard.appendChild(engineBadge);
-  engineCard.appendChild(enginePrev);
-  engineCard.appendChild(engineLbl);
-  out.appendChild(engineCard);
-
-  wagons.forEach((w, idx) => {
-    const coupler = document.createElement('div');
-    coupler.className = 'coupler';
-    out.appendChild(coupler);
-
-    const wCard = document.createElement('div');
-    wCard.className = 'output-card output-wagon';
-
-    const wBadge = document.createElement('div');
-    wBadge.className = 'card-badge';
-    wBadge.textContent = 'Lv ' + (w.level || '—');
-    wCard.appendChild(wBadge);
-
-    const wPrev = document.createElement('div');
-    wPrev.className = 'slot-preview';
-    buildPreview(wPrev, 'wagon', w.wagonId);
-    wCard.appendChild(wPrev);
-
-    const wLbl = document.createElement('div');
-    wLbl.className = 'card-label';
-    wLbl.textContent = 'Wagon ' + (idx + 1);
-    wCard.appendChild(wLbl);
-
-    const extGrid = document.createElement('div');
-    extGrid.className = 'output-ext-grid';
-    extGrid.style.marginTop = '8px';
-    for(let i = 0; i < EXT_SLOTS; i++){
-      const item = w.exts[i] ? findById('ext', w.exts[i]) : null;
-      if(!item) continue;
-
-      const slot = document.createElement('div');
-      slot.className = 'output-ext-slot';
-      const img = document.createElement('img');
-      img.src = item.path;
-      img.alt = item.type;
-      img.addEventListener('error', () => { slot.remove(); });
-      slot.appendChild(img);
-      extGrid.appendChild(slot);
-    }
-    if(extGrid.children.length) wCard.appendChild(extGrid);
-
-    out.appendChild(wCard);
-  });
-}
-
-// ---------- Output-only mode (OBS Browser Source) ----------
-const urlParams = new URLSearchParams(location.search);
-const outputOnlyMode = urlParams.has('output');
-if(outputOnlyMode){ document.body.classList.add('output-only'); }
-
-async function tryFetchJson(url){
-  try{
-    const res = await fetch(url, { cache: 'no-store' });
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){ return null; }
-}
-
-async function pollLiveFiles(){
-  const libData = await tryFetchJson('unrailed2-image-library.json');
-  if(libData && libData.library) library = libData.library;
-
-  const setupData = await tryFetchJson('unrailed2-wagon-setup.json');
-  if(setupData && ('wagons' in setupData)){
-    engineChoice = setupData.engineChoice || engineChoice;
-    wagons = setupData.wagons || [];
-  }
-
-  if(libData || setupData) renderOutput();
-}
-
-if(outputOnlyMode){
-  pollLiveFiles();
-  setInterval(pollLiveFiles, 3000);
-}
-
-// ---------- Init ----------
-async function init(){
-  const restored = loadPersisted();
-  if(!restored && wagons.length === 0){
-    addWagon();
-  }
-  await autoLoadLibrary();
-  renderLibrary();
-}
-
-init();
-</script>
-</body>
-</html>
