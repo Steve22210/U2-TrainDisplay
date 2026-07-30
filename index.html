@@ -1096,6 +1096,12 @@ function renderOutput(){
 async function downloadOutputPng(evt){
   const target = document.getElementById('outputRow');
   if(!target) return;
+
+  const userBuildName = prompt('Enter a name for this build:', 'my-train-build');
+  if (userBuildName === null) return; // User pressed Cancel
+
+  const sanitizedName = userBuildName.trim().replace(/[^a-z0-9_\-]/gi, '_') || 'unrailed2-train-setup';
+
   const btn = evt && evt.target;
   const originalLabel = btn ? btn.textContent : null;
   if(btn){ btn.textContent = 'Rendering…'; btn.disabled = true; }
@@ -1106,7 +1112,7 @@ async function downloadOutputPng(evt){
       useCORS: true
     });
     const link = document.createElement('a');
-    link.download = 'unrailed2-train-setup.png';
+    link.download = `${sanitizedName}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   }catch(err){
