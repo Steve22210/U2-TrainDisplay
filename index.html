@@ -135,6 +135,13 @@
     font-weight:600;
   }
   button.primary:hover{ filter: brightness(1.08); }
+  button.danger-btn{
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  button.danger-btn:hover{
+    background: rgba(226, 88, 79, 0.15);
+  }
 
   .builder-toolbar{
     display:flex; align-items:center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap;
@@ -432,26 +439,6 @@
 
   footer{ text-align:center; color: var(--muted); font-size: 12px; margin-top: 30px; }
   footer .track{ margin: 20px 0 14px; }
-
-  /* Output-only mode (OBS Browser Source) */
-  body.output-only{
-    background: transparent;
-    padding: 0;
-  }
-  body.output-only .wrap{
-    max-width: none;
-    margin: 0;
-    padding: 0;
-  }
-  body.output-only .wrap > *:not(#outputSection){
-    display: none !important;
-  }
-  body.output-only .output-toolbar{
-    display: none;
-  }
-  body.output-only .output-scroll{
-    padding: 12px 0;
-  }
 </style>
 </head>
 <body>
@@ -495,6 +482,7 @@
     <div class="lib-toolbar">
       <button class="primary" onclick="exportSetup()">⭳ Save setup</button>
       <button onclick="document.getElementById('importSetupFile').click()">⭱ Load setup</button>
+      <button class="danger-btn" onclick="clearSetup()">🗑 Clear setup</button>
       <input type="file" id="importSetupFile" accept="application/json" style="display:none" onchange="importSetup(this.files[0])">
     </div>
 
@@ -530,7 +518,6 @@
   <section id="outputSection">
     <div class="output-toolbar">
       <button class="primary" onclick="downloadOutputPng(event)">⭳ Download PNG</button>
-      <button onclick="copyObsSourceUrl()" id="copyObsBtn">⧉ Copy OBS Source</button>
     </div>
     <div class="output-scroll">
       <div class="output-row" id="outputRow"></div>
@@ -592,6 +579,16 @@ function loadPersisted(){
     wagons = data.wagons || [];
     return true;
   }catch(e){ return false; }
+}
+
+function clearSetup(){
+  if(confirm("Are you sure you want to clear the current wagon setup?")){
+    engineChoice = { id: library.engine[0] ? library.engine[0].id : '', level: 1 };
+    wagons = [];
+    persist();
+    renderEngine();
+    renderWagons();
+  }
 }
 
 function downloadJson(filename, data){
@@ -1130,76 +1127,6 @@ async function downloadOutputPng(evt){
   }finally{
     if(btn){ btn.textContent = originalLabel; btn.disabled = false; }
   }
-}
-
-// ---------- Export: copy OBS Browser Source URL ----------
-function copyObsSourceUrl(){
-  const base = location.href.split('?')[0].split('#')[0];
-  const url = base + '?output=1';
-  const btn = document.getElementById('copyObsBtn');
-  const originalLabel = btn ? btn.textContent : null;
-
-  const showCopied = () => {
-    if(btn){
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => { btn.textContent = originalLabel; }, 1500);
-    }
-  };
-
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(showCopied).catch(() => fallbackCopy(url, showCopied));
-  }else{
-    fallbackCopy(url, showCopied);
-  }
-}
-
-function fallbackCopy(text, onSuccess){
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  try{
-    document.execCommand('copy');
-    onSuccess && onSuccess();
-  }catch(err){
-    console.error('Copy failed:', err);
-    alert('Copy failed. URL: ' + text);
-  }
-  document.body.removeChild(ta);
-}
-
-// ---------- Output-only mode (OBS Browser Source) ----------
-const urlParams = new URLSearchParams(location.search);
-const outputOnlyMode = urlParams.has('output');
-if(outputOnlyMode){ document.body.classList.add('output-only'); }
-
-async function tryFetchJson(url){
-  try{
-    const res = await fetch(url, { cache: 'no-store' });
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){ return null; }
-}
-
-async function pollLiveFiles(){
-  const libData = await tryFetchJson('unrailed2-image-library.json');
-  if(libData && libData.library) library = libData.library;
-
-  const setupData = await tryFetchJson('unrailed2-wagon-setup.json');
-  if(setupData && ('wagons' in setupData)){
-    engineChoice = setupData.engineChoice || engineChoice;
-    wagons = setupData.wagons || [];
-  }
-
-  if(libData || setupData) renderOutput();
-}
-
-if(outputOnlyMode){
-  pollLiveFiles();
-  setInterval(pollLiveFiles, 3000);
 }
 
 // ---------- Init ----------
