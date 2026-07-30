@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Unrailed 2 — Wagon Setup Builder</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --bg: #10161d;
@@ -56,15 +55,6 @@
   section > h2, .section-title{
     font-size: 16px;
     color: var(--amber);
-    margin-bottom: 0;
-  }
-
-  .output-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
     margin-bottom: 14px;
   }
 
@@ -322,11 +312,11 @@
   .output-row{
     display:flex;
     flex-direction: row-reverse;
-    align-items: center;
+    align-items: flex-start;
     gap: 0;
     width: max-content;
     margin: 0 auto;
-    padding: 12px 24px;
+    padding: 0 24px;
   }
   .output-card{
     background: var(--panel);
@@ -346,10 +336,10 @@
     text-transform: uppercase; letter-spacing: .04em; margin-top: 6px;
   }
   .coupler{
-    width: 16px; height: 4px;
+    width: 16px; height: 4px; align-self: center;
     background: var(--amber-dim);
     flex-shrink: 0;
-    margin-top: 0;
+    margin-top: 64px;
   }
   .output-ext-grid{
     display:grid;
@@ -451,8 +441,8 @@
   body.output-only .wrap > *:not(#outputSection){
     display: none !important;
   }
-  body.output-only #outputSection .output-header{
-    display: none !important;
+  body.output-only #outputSection h2{
+    display: none;
   }
   body.output-only .output-scroll{
     padding: 12px 0;
@@ -533,15 +523,7 @@
   <div class="track"></div>
 
   <section id="outputSection">
-    <div class="output-header">
-      <h2>Train Preview</h2>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button class="primary" onclick="downloadPNG()">📷 Download PNG</button>
-        <a href="?output" target="_blank" style="text-decoration:none;">
-          <button type="button">🎥 OBS Mode (?output)</button>
-        </a>
-      </div>
-    </div>
+    <h2>Output — Train Preview</h2>
     <div class="output-scroll">
       <div class="output-row" id="outputRow"></div>
     </div>
@@ -549,6 +531,7 @@
 
   <footer>
     <div class="track"></div>
+    Paths are read relative to this HTML file location.
   </footer>
 
 </div>
@@ -650,25 +633,6 @@ function importSetup(file){
     }catch(err){ alert('Could not read setup file.'); }
   };
   reader.readAsText(file);
-}
-
-async function downloadPNG(){
-  const row = document.getElementById('outputRow');
-  if(!row) return;
-  try{
-    const canvas = await html2canvas(row, {
-      backgroundColor: '#10161d',
-      scale: 2
-    });
-    const link = document.createElement('a');
-    link.download = 'unrailed2-train-preview.png';
-    link.href = canvas.toDataURL('image/png');
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  }catch(e){
-    alert('Failed to generate PNG preview.');
-  }
 }
 
 // ---------- Auto-load Library File ----------
@@ -1161,3 +1125,10 @@ async function init(){
     addWagon();
   }
   await autoLoadLibrary();
+  renderLibrary();
+}
+
+init();
+</script>
+</body>
+</html>
