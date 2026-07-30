@@ -36,7 +36,6 @@
   .wrap{ max-width: 1200px; margin: 0 auto; }
   header{ text-align:center; margin-bottom: 18px; }
   header h1{ font-size: 28px; letter-spacing: 0.5px; color: var(--text); }
-  header p{ color: var(--muted); margin: 6px 0 0; font-size: 14px; }
 
   .track{
     height: 14px;
@@ -78,13 +77,11 @@
   details.panel summary::-webkit-details-marker{ display:none; }
   details.panel summary::before{ content: "▸"; transition: transform .15s; }
   details.panel[open] summary::before{ transform: rotate(90deg); }
-  summary .hint{ color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left:auto; }
 
   .lib-toolbar{
     display:flex; gap:8px; margin: 0 0 14px;
     flex-wrap: wrap; align-items:center;
   }
-  .lib-toolbar .save-state{ color: var(--muted); font-size: 11.5px; }
 
   .lib-grid{
     display:grid;
@@ -94,7 +91,6 @@
   @media (max-width: 900px){ .lib-grid{ grid-template-columns: 1fr; } }
 
   .lib-col h3{ font-size: 14px; color: var(--text); margin-bottom: 8px; }
-  .lib-col .lib-sub{ color: var(--muted); font-size: 11.5px; margin: -4px 0 10px; }
 
   .lib-row{
     display:grid;
@@ -254,7 +250,6 @@
     box-shadow: 0 0 12px rgba(255, 182, 39, 0.35);
   }
 
-  /* Header inside wagon card to prevent text collision */
   .wagon-card-header{
     display: flex;
     align-items: center;
@@ -388,7 +383,7 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   }
   .modal-header{
-    display:flex; justify-space-between; align-items:center;
+    display:flex; justify-content:space-between; align-items:center;
     margin-bottom: 16px;
   }
   .modal-header h3{ color: var(--amber); font-size: 16px; }
@@ -459,51 +454,43 @@
 
   <header>
     <h1>UNRAILED 2 — WAGON SETUP BUILDER</h1>
-    <p>Register your image files below, then assemble an engine + wagon consist with extensions.</p>
   </header>
 
   <div class="track"></div>
 
-  <details class="panel" id="libraryPanel" open>
-    <summary>Image Library <span class="hint">register PNG paths for engine, wagons and extensions</span></summary>
+  <details class="panel" id="libraryPanel" style="display: none;">
+    <summary>Image Library</summary>
 
     <div class="lib-toolbar">
       <button class="primary" onclick="exportLibrary()">⭳ Save library</button>
       <button onclick="document.getElementById('importLibraryFile').click()">⭱ Load library</button>
       <input type="file" id="importLibraryFile" accept="application/json" style="display:none" onchange="importLibrary(this.files[0])">
-      <span class="save-state">Save to JSON in the same folder as this HTML file for OBS auto-sync.</span>
     </div>
 
     <div class="lib-grid">
       <div class="lib-col">
         <h3>Engine</h3>
-        <div class="lib-sub">one row per engine type</div>
         <div id="libEngine"></div>
         <button class="add-btn" onclick="addLibRow('engine')">+ Add engine image</button>
       </div>
       <div class="lib-col">
         <h3>Wagons</h3>
-        <div class="lib-sub">one row per wagon type</div>
         <div id="libWagon"></div>
         <button class="add-btn" onclick="addLibRow('wagon')">+ Add wagon image</button>
       </div>
       <div class="lib-col">
         <h3>Extensions</h3>
-        <div class="lib-sub">one row per extension type</div>
         <div id="libExt"></div>
         <button class="add-btn" onclick="addLibRow('ext')">+ Add extension image</button>
       </div>
     </div>
   </details>
 
-  <div class="track"></div>
-
   <section id="builderSection">
     <div class="lib-toolbar">
       <button class="primary" onclick="exportSetup()">⭳ Save setup</button>
       <button onclick="document.getElementById('importSetupFile').click()">⭱ Load setup</button>
       <input type="file" id="importSetupFile" accept="application/json" style="display:none" onchange="importSetup(this.files[0])">
-      <span class="save-state">Save setup JSON to the same folder to update your OBS overlay.</span>
     </div>
 
     <div class="engine-row">
@@ -536,7 +523,7 @@
   <div class="track"></div>
 
   <section id="outputSection">
-    <h2>Output — Train Preview <span style="color:var(--muted); font-weight:400; font-size:12.5px;">(engine on the right, wagons trailing to the left)</span></h2>
+    <h2>Output — Train Preview</h2>
     <div class="output-scroll">
       <div class="output-row" id="outputRow"></div>
     </div>
@@ -572,7 +559,7 @@ let library = {
 };
 
 let engineChoice = { id: library.engine[0].id, level: 1 };
-let wagons = []; // { id, wagonId: '', level: 1, exts: [extId or '' x12] }
+let wagons = [];
 
 const EXT_SLOTS = 12;
 let currentPickerTarget = null;
@@ -646,6 +633,20 @@ function importSetup(file){
     }catch(err){ alert('Could not read setup file.'); }
   };
   reader.readAsText(file);
+}
+
+// ---------- Auto-load Library File ----------
+async function autoLoadLibrary(){
+  try{
+    const res = await fetch('unrailed2-image-library.json?t=' + Date.now(), { cache: 'no-store' });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data && data.library){
+      uid = Math.max(uid, data.uid || 0);
+      library = data.library;
+      persist();
+    }
+  }catch(e){ /* ignore if not present */ }
 }
 
 // ---------- Helpers ----------
@@ -869,7 +870,6 @@ function renderWagons(){
     card.className = 'wagon-card';
     card.setAttribute('draggable', 'true');
 
-    // Drag-and-drop events
     card.addEventListener('dragstart', (e) => {
       draggedWagonIndex = idx;
       e.dataTransfer.effectAllowed = 'move';
@@ -903,7 +903,6 @@ function renderWagons(){
       }
     });
 
-    // Clean flexbox header bar (fixes overlap issue)
     const header = document.createElement('div');
     header.className = 'wagon-card-header';
 
@@ -934,7 +933,6 @@ function renderWagons(){
     header.appendChild(controls);
     card.appendChild(header);
 
-    // Wagon top section
     const top = document.createElement('div');
     top.className = 'wagon-top';
 
@@ -950,7 +948,6 @@ function renderWagons(){
 
     const currentWagon = findById('wagon', w.wagonId);
     
-    // Type selection
     const typeLabel = document.createElement('label');
     typeLabel.className = 'meta-label';
     typeLabel.textContent = 'Wagon Type';
@@ -961,7 +958,6 @@ function renderWagons(){
     typeBtn.textContent = currentWagon ? currentWagon.type : '— select wagon —';
     typeBtn.onclick = () => openPicker('wagon', w.id);
 
-    // Level input (stacked below type)
     const levelLabel = document.createElement('label');
     levelLabel.className = 'meta-label';
     levelLabel.style.marginTop = '8px';
@@ -990,7 +986,6 @@ function renderWagons(){
     top.appendChild(metaWrap);
     card.appendChild(top);
 
-    // Extensions grid (3x4 layout)
     const grid = document.createElement('div');
     grid.className = 'ext-grid';
     for(let i = 0; i < EXT_SLOTS; i++){
@@ -1031,7 +1026,6 @@ function renderOutput(){
     return;
   }
 
-  // Engine card
   const engineCard = document.createElement('div');
   engineCard.className = 'output-card output-engine';
   const engineBadge = document.createElement('div');
@@ -1125,11 +1119,16 @@ if(outputOnlyMode){
 }
 
 // ---------- Init ----------
-const restored = loadPersisted();
-if(!restored && wagons.length === 0){
-  addWagon();
+async function init(){
+  const restored = loadPersisted();
+  if(!restored && wagons.length === 0){
+    addWagon();
+  }
+  await autoLoadLibrary();
+  renderLibrary();
 }
-renderLibrary();
+
+init();
 </script>
 </body>
 </html>
