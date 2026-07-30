@@ -193,7 +193,7 @@
         "id": "35",
         "type": "Teleporter",
         "level": 1,
-        "path": "Sprites/Icons__TeleporterWagon.png"
+        "path": "Sprites/Icons__TeleportWagon.png"
       },
       {
         "id": "36",
