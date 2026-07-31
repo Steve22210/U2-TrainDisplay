@@ -706,9 +706,11 @@ async function importShareCode() {
   }
 
   try {
-    // Fetch latest setups.json file (bypassing browser cache with timestamp)
     const response = await fetch(`${GITHUB_SETUPS_URL}?t=${Date.now()}`);
-    if (!response.ok) throw new Error("Could not load setups database.");
+    
+    if (!response.ok) {
+      throw new Error(`Server returned status ${response.status} (${response.statusText})`);
+    }
 
     const database = await response.json();
     const data = database[code];
@@ -726,8 +728,8 @@ async function importShareCode() {
     renderWagons();
     alert(`Setup "${code}" loaded successfully!`);
   } catch (err) {
-    console.error(err);
-    alert("Failed to load setup code. Make sure setups.json exists and is accessible.");
+    console.error("Import Error Details:", err);
+    alert(`Failed to load setup code:\n${err.message}`);
   }
 }
 
