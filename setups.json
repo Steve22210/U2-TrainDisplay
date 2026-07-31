@@ -120,5 +120,12 @@
       "level": 1
     },
     "wagons": []
+  },
+  "0V886YBX": {
+    "engineChoice": {
+      "id": "1",
+      "level": 1
+    },
+    "wagons": []
   }
 }
