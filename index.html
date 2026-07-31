@@ -482,6 +482,8 @@
     <div class="lib-toolbar">
       <button class="primary" onclick="exportSetup()">⭳ Save setup</button>
       <button onclick="document.getElementById('importSetupFile').click()">⭱ Load setup</button>
+      <button onclick="exportShareCode()">📋 Export code</button>
+      <button onclick="importShareCode()">📥 Import code</button>
       <button class="danger-btn" onclick="clearSetup()">🗑 Clear setup</button>
       <input type="file" id="importSetupFile" accept="application/json" style="display:none" onchange="importSetup(this.files[0])">
     </div>
@@ -623,7 +625,7 @@ function importLibrary(file){
 
 function exportSetup(){
   const userSetupName = prompt('Enter a name for this setup:', 'my-wagon-setup');
-  if (userSetupName === null) return; // User pressed Cancel
+  if (userSetupName === null) return;
 
   const sanitizedName = userSetupName.trim().replace(/[^a-z0-9_\-]/gi, '_') || 'unrailed2-wagon-setup';
   downloadJson(`${sanitizedName}.json`, { engineChoice, wagons });
@@ -644,6 +646,48 @@ function importSetup(file){
     }catch(err){ alert('Could not read setup file.'); }
   };
   reader.readAsText(file);
+}
+
+// ---------- Share Code Export & Import ----------
+function exportShareCode(){
+  try{
+    const data = { engineChoice, wagons };
+    const jsonStr = JSON.stringify(data);
+    const code = btoa(encodeURIComponent(jsonStr));
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        alert("Share code copied to clipboard!\n\nCode: " + code);
+      }).catch(() => {
+        prompt("Copy your share code below:", code);
+      });
+    } else {
+      prompt("Copy your share code below:", code);
+    }
+  }catch(e){
+    alert("Failed to generate share code.");
+  }
+}
+
+function importShareCode(){
+  const code = prompt("Paste your share code here:");
+  if (!code || !code.trim()) return;
+
+  try {
+    const jsonStr = decodeURIComponent(atob(code.trim()));
+    const data = JSON.parse(jsonStr);
+
+    if (!data || !('wagons' in data)) throw new Error('Invalid code structure');
+
+    engineChoice = data.engineChoice || { id: '', level: 1 };
+    wagons = data.wagons || [];
+    persist();
+    renderEngine();
+    renderWagons();
+    alert("Setup successfully loaded!");
+  } catch (err) {
+    alert("Invalid share code. Please make sure you copied the full string.");
+  }
 }
 
 // ---------- Auto-load Library File ----------
@@ -1104,7 +1148,7 @@ async function downloadOutputPng(evt){
   if(!target) return;
 
   const userBuildName = prompt('Enter a name for this build:', 'my-train-build');
-  if (userBuildName === null) return; // User pressed Cancel
+  if (userBuildName === null) return;
 
   const sanitizedName = userBuildName.trim().replace(/[^a-z0-9_\-]/gi, '_') || 'unrailed2-train-setup';
 
