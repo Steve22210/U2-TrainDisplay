@@ -113,5 +113,12 @@
       "level": 1
     },
     "wagons": []
+  },
+  "5E1LB8YY": {
+    "engineChoice": {
+      "id": "1",
+      "level": 1
+    },
+    "wagons": []
   }
 }
