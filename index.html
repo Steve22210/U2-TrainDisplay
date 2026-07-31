@@ -649,44 +649,85 @@ function importSetup(file){
 }
 
 // ---------- Share Code Export & Import ----------
-function exportShareCode(){
-  try{
-    const data = { engineChoice, wagons };
-    const jsonStr = JSON.stringify(data);
-    const code = btoa(encodeURIComponent(jsonStr));
+// ---------- 8-Character Share Code Export & Import (Vercel API) ----------
+function generate8Charcode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(code).then(() => {
-        alert("Share code copied to clipboard!\n\nCode: " + code);
-      }).catch(() => {
-        prompt("Copy your share code below:", code);
-      });
-    } else {
-      prompt("Copy your share code below:", code);
+// Export function: sends code + payload to /api/save-setup
+async function exportShareCode() {
+  const code = generate8Charcode();
+  const buildPayload = {
+    engineChoice,
+    wagons
+  };
+
+  try {
+    const res = await fetch('/api/save-setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, payload: buildPayload })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.error || 'Failed to save setup');
     }
-  }catch(e){
-    alert("Failed to generate share code.");
+
+    // Copy the code to clipboard automatically
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(code);
+    }
+
+    alert(`Setup automatically saved!\n\nYour 8-character share code is: ${code}\n(Copied to clipboard)`);
+
+  } catch (err) {
+    console.error(err);
+    alert(`Could not automatically save setup: ${err.message}`);
   }
 }
 
-function importShareCode(){
-  const code = prompt("Paste your share code here:");
+// Import function: fetches setups.json directly
+async function importShareCode() {
+  let code = prompt("Enter your 8-character setup code (e.g. X7K9P2M4):");
   if (!code || !code.trim()) return;
 
-  try {
-    const jsonStr = decodeURIComponent(atob(code.trim()));
-    const data = JSON.parse(jsonStr);
+  code = code.trim().toUpperCase();
 
-    if (!data || !('wagons' in data)) throw new Error('Invalid code structure');
+  if (!/^[A-Z0-9]{8}$/.test(code)) {
+    alert("Invalid code format! Code must be exactly 8 capital letters and numbers.");
+    return;
+  }
+
+  try {
+    // Fetch latest setups.json file (bypassing browser cache with timestamp)
+    const response = await fetch(`${GITHUB_SETUPS_URL}?t=${Date.now()}`);
+    if (!response.ok) throw new Error("Could not load setups database.");
+
+    const database = await response.json();
+    const data = database[code];
+
+    if (!data) {
+      alert(`Code "${code}" was not found in setups.json.`);
+      return;
+    }
 
     engineChoice = data.engineChoice || { id: '', level: 1 };
     wagons = data.wagons || [];
+
     persist();
     renderEngine();
     renderWagons();
-    alert("Setup successfully loaded!");
+    alert(`Setup "${code}" loaded successfully!`);
   } catch (err) {
-    alert("Invalid share code. Please make sure you copied the full string.");
+    console.error(err);
+    alert("Failed to load setup code. Make sure setups.json exists and is accessible.");
   }
 }
 
