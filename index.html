@@ -687,7 +687,7 @@ async function exportShareCode() {
       await navigator.clipboard.writeText(code);
     }
 
-    alert(`Setup automatically saved!\n\nYour 8-character share code is: ${code}\n(Copied to clipboard)`);
+    alert(`Setup automatically saved!\n\nYour 8-character share code is: ${code}\nIt can take multiple minutes for the code to become accessible.\n(Copied to clipboard)`);
 
   } catch (err) {
     console.error(err);
@@ -718,7 +718,7 @@ async function importShareCode() {
     const data = database[code];
 
     if (!data) {
-      alert(`Code "${code}" was not found in setups.json.`);
+      alert(`Code "${code}" was not found, if it was created recently it can take a few minutes to become accessible.`);
       return;
     }
 
