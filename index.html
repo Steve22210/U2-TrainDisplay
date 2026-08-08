@@ -172,7 +172,11 @@
   .slot-preview.clickable:hover{ border-color: var(--amber); background: #24303c; }
   .slot-preview img{ max-width:100%; max-height:100%; object-fit:contain; }
   .slot-preview.placeholder{ color: var(--muted); font-size: 10px; text-align:center; padding:2px; }
-  .engine-card .slot-preview{ width: 104px; height: 104px; }
+  
+  /* Enlarged engine slot previews (+65%) */
+  .engine-card .slot-preview{ width: 142px; height: 142px; }
+  .pusher-engine-preview{ width: 142px !important; height: 142px !important; }
+  .pusher-engine-preview img{ transform: scale(1.15); }
   .wagon-top .slot-preview{ width: 86px; height: 86px; }
 
   .card-badge{
@@ -334,11 +338,12 @@
     flex-shrink: 0;
   }
   
-  /* Engine size enlarged in output (+65%) */
-  .output-engine{ width: 218px; text-align:center; }
+  /* Output engine size enlarged (+65%) */
+  .output-engine{ width: 228px; text-align:center; }
   .output-wagon{ width: 230px; }
   .output-card .slot-preview{ margin: 0 auto; pointer-events: none; }
   .output-engine .slot-preview{ width: 172px; height: 172px; }
+  .output-engine .slot-preview img{ transform: scale(1.15); max-width: 100%; max-height: 100%; object-fit: contain; }
   .output-wagon .slot-preview{ width: 90px; height: 90px; margin-bottom: 8px; }
   .output-card .card-label{
     text-align:center; font-size: 11px; color: var(--muted);
@@ -564,7 +569,7 @@ let wagons = [];
 
 const EXT_SLOTS = 12;
 let currentPickerTarget = null;
-let draggedItemInfo = null; // { type: 'wagon'|'engine', index: number }
+let draggedCardIndex = null;
 
 // Helper check for Pusher Engine
 function isPusherEngine(id) {
@@ -986,53 +991,6 @@ function createPusherEngineCard() {
   const card = document.createElement('div');
   card.className = 'wagon-card';
   card.style.borderColor = 'var(--amber)';
-  card.setAttribute('draggable', 'true');
-
-  card.addEventListener('dragstart', (e) => {
-    draggedItemInfo = { type: 'engine', index: engineChoice.positionIndex ?? wagons.length };
-    e.dataTransfer.effectAllowed = 'move';
-    card.classList.add('dragging');
-  });
-
-  card.addEventListener('dragend', () => {
-    draggedItemInfo = null;
-    card.classList.remove('dragging');
-    document.querySelectorAll('.wagon-card').forEach(c => c.classList.remove('drag-over'));
-  });
-
-  card.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    card.classList.add('drag-over');
-  });
-
-  card.addEventListener('dragleave', () => {
-    card.classList.remove('drag-over');
-  });
-
-  card.addEventListener('drop', (e) => {
-    e.preventDefault();
-    card.classList.remove('drag-over');
-    if (!draggedItemInfo) return;
-    
-    const targetIdx = engineChoice.positionIndex ?? wagons.length;
-    if (draggedItemInfo.type === 'wagon') {
-      const wagonIdx = draggedItemInfo.index;
-      const [draggedWagon] = wagons.splice(wagonIdx, 1);
-      
-      let insertIdx = targetIdx;
-      if (wagonIdx < targetIdx) insertIdx--;
-      wagons.splice(insertIdx, 0, draggedWagon);
-      
-      if (wagonIdx < targetIdx) {
-        engineChoice.positionIndex = Math.max(0, targetIdx - 1);
-      } else {
-        engineChoice.positionIndex = targetIdx + 1;
-      }
-      renderWagons();
-      persist();
-    }
-  });
 
   const header = document.createElement('div');
   header.className = 'wagon-card-header';
@@ -1058,7 +1016,7 @@ function createPusherEngineCard() {
   top.className = 'wagon-top';
 
   const preview = document.createElement('div');
-  preview.className = 'slot-preview clickable';
+  preview.className = 'slot-preview clickable pusher-engine-preview';
   preview.title = 'Click to choose engine type';
   preview.onclick = () => openPicker('engine');
   buildPreview(preview, 'engine', engineChoice.id);
@@ -1122,70 +1080,27 @@ function renderWagons(){
     engineChoice.positionIndex = wagons.length;
   }
 
+  // Unified items array for 100% natural wagon drag & drop
+  let items = [];
   let pusherPos = isPusher ? Math.min(Math.max(0, engineChoice.positionIndex ?? 0), wagons.length) : -1;
 
   for (let i = 0; i <= wagons.length; i++) {
     if (isPusher && i === pusherPos) {
-      const pusherCard = createPusherEngineCard();
-      row.appendChild(pusherCard);
+      items.push({ type: 'engine' });
     }
-
     if (i < wagons.length) {
-      const w = wagons[i];
-      const idx = i;
-      const card = document.createElement('div');
+      items.push({ type: 'wagon', wagon: wagons[i] });
+    }
+  }
+
+  items.forEach((item, idx) => {
+    let card;
+    if (item.type === 'engine') {
+      card = createPusherEngineCard();
+    } else {
+      const w = item.wagon;
+      card = document.createElement('div');
       card.className = 'wagon-card';
-      card.setAttribute('draggable', 'true');
-
-      card.addEventListener('dragstart', (e) => {
-        draggedItemInfo = { type: 'wagon', index: idx };
-        e.dataTransfer.effectAllowed = 'move';
-        card.classList.add('dragging');
-      });
-
-      card.addEventListener('dragend', () => {
-        draggedItemInfo = null;
-        card.classList.remove('dragging');
-        document.querySelectorAll('.wagon-card').forEach(c => c.classList.remove('drag-over'));
-      });
-
-      card.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        card.classList.add('drag-over');
-      });
-
-      card.addEventListener('dragleave', () => {
-        card.classList.remove('drag-over');
-      });
-
-      card.addEventListener('drop', (e) => {
-        e.preventDefault();
-        card.classList.remove('drag-over');
-        if (!draggedItemInfo) return;
-
-        if (draggedItemInfo.type === 'wagon') {
-          const fromIdx = draggedItemInfo.index;
-          if (fromIdx !== idx) {
-            const [dragged] = wagons.splice(fromIdx, 1);
-            wagons.splice(idx, 0, dragged);
-
-            if (isPusher) {
-              if (fromIdx < pusherPos && idx >= pusherPos) {
-                engineChoice.positionIndex = Math.max(0, pusherPos - 1);
-              } else if (fromIdx > pusherPos && idx <= pusherPos) {
-                engineChoice.positionIndex = pusherPos + 1;
-              }
-            }
-            renderWagons();
-            persist();
-          }
-        } else if (draggedItemInfo.type === 'engine') {
-          engineChoice.positionIndex = idx;
-          renderWagons();
-          persist();
-        }
-      });
 
       const header = document.createElement('div');
       header.className = 'wagon-card-header';
@@ -1193,7 +1108,7 @@ function renderWagons(){
       const titleArea = document.createElement('div');
       titleArea.className = 'wagon-title-area';
       titleArea.title = 'Click & drag to reorder wagon';
-      titleArea.innerHTML = `<span class="drag-handle">⠿</span><h3>Wagon ${idx + 1}</h3>`;
+      titleArea.innerHTML = `<span class="drag-handle">⠿</span><h3>Wagon ${wagons.indexOf(w) + 1}</h3>`;
 
       const controls = document.createElement('div');
       controls.className = 'wagon-controls';
@@ -1242,7 +1157,6 @@ function renderWagons(){
       typeBtn.textContent = currentWagon ? currentWagon.type : '— select wagon —';
       typeBtn.onclick = () => openPicker('wagon', w.id);
 
-      const levelLabel = document.label;
       const levelLabelEl = document.createElement('label');
       levelLabelEl.className = 'meta-label';
       levelLabelEl.style.marginTop = '8px';
@@ -1293,10 +1207,53 @@ function renderWagons(){
         grid.appendChild(slot);
       }
       card.appendChild(grid);
-
-      row.appendChild(card);
     }
-  }
+
+    // Attach identical drag-and-drop mechanics to every card
+    card.setAttribute('draggable', 'true');
+
+    card.addEventListener('dragstart', (e) => {
+      draggedCardIndex = idx;
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('dragging');
+    });
+
+    card.addEventListener('dragend', () => {
+      draggedCardIndex = null;
+      card.classList.remove('dragging');
+      document.querySelectorAll('.wagon-card').forEach(c => c.classList.remove('drag-over'));
+    });
+
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      card.classList.add('drag-over');
+    });
+
+    card.addEventListener('dragleave', () => {
+      card.classList.remove('drag-over');
+    });
+
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if (draggedCardIndex !== null && draggedCardIndex !== idx) {
+        const [movedItem] = items.splice(draggedCardIndex, 1);
+        items.splice(idx, 0, movedItem);
+
+        // Reconstruct wagons array and pusher engine position index
+        wagons = items.filter(it => it.type === 'wagon').map(it => it.wagon);
+        if (isPusher) {
+          engineChoice.positionIndex = items.findIndex(it => it.type === 'engine');
+        }
+
+        renderWagons();
+        persist();
+      }
+    });
+
+    row.appendChild(card);
+  });
 
   renderOutput();
 }
