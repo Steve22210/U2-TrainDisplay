@@ -155,9 +155,7 @@
     padding: 12px;
     position: relative;
   }
-  .engine-row{ display:flex; align-items:center; gap:16px; margin-bottom: 20px; }
-  .engine-card{ display:flex; align-items:center; gap:14px; flex:1; padding-right: 60px; }
-  
+
   .slot-preview{
     width: 74px; height: 74px;
     background: var(--panel-2);
@@ -172,7 +170,9 @@
   .slot-preview.clickable:hover{ border-color: var(--amber); background: #24303c; }
   .slot-preview img{ max-width:100%; max-height:100%; object-fit:contain; }
   .slot-preview.placeholder{ color: var(--muted); font-size: 10px; text-align:center; padding:2px; }
-  .engine-card .slot-preview{ width: 104px; height: 104px; }
+
+  /* Engine Image Scale Boosted (~65% scale increase) */
+  .slot-preview.engine-slot{ width: 165px; height: 165px; }
   .wagon-top .slot-preview{ width: 86px; height: 86px; }
 
   .card-badge{
@@ -242,7 +242,7 @@
     padding: 0 24px;
   }
   
-  .wagon-card{
+  .wagon-card, .engine-card{
     min-width: 250px;
     max-width: 270px;
     display:flex; flex-direction:column; gap:10px;
@@ -250,9 +250,9 @@
     cursor: grab;
     transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
-  .wagon-card:active{ cursor: grabbing; }
-  .wagon-card.dragging{ opacity: 0.4; }
-  .wagon-card.drag-over{
+  .wagon-card:active, .engine-card:active{ cursor: grabbing; }
+  .wagon-card.dragging, .engine-card.dragging{ opacity: 0.4; }
+  .wagon-card.drag-over, .engine-card.drag-over{
     border-color: var(--amber);
     box-shadow: 0 0 12px rgba(255, 182, 39, 0.35);
   }
@@ -333,10 +333,13 @@
     position: relative;
     flex-shrink: 0;
   }
-  .output-engine{ width: 132px; text-align:center; }
+  
+  /* Output Engine Image Scale Boosted (~65% scale increase) */
+  .output-engine{ width: 210px; text-align:center; }
+  .output-engine .slot-preview{ width: 165px; height: 165px; margin: 0 auto; }
+  
   .output-wagon{ width: 230px; }
   .output-card .slot-preview{ margin: 0 auto; pointer-events: none; }
-  .output-engine .slot-preview{ width: 104px; height: 104px; }
   .output-wagon .slot-preview{ width: 90px; height: 90px; margin-bottom: 8px; }
   .output-card .card-label{
     text-align:center; font-size: 11px; color: var(--muted);
@@ -488,26 +491,9 @@
       <input type="file" id="importSetupFile" accept="application/json" style="display:none" onchange="importSetup(this.files[0])">
     </div>
 
-    <div class="engine-row">
-      <div class="engine-card" id="engineCard">
-        <div class="slot-preview clickable" id="enginePreview" title="Click to choose Engine" onclick="openPicker('engine')"></div>
-        <div class="engine-meta" style="flex:1">
-          <div class="meta-field">
-            <label class="meta-label">Engine Type</label>
-            <button class="select-btn" id="engineTypeBtn" onclick="openPicker('engine')">— select —</button>
-          </div>
-          <div class="meta-field" style="margin-top: 10px;">
-            <label class="meta-label">Level</label>
-            <input type="number" class="level-input" id="engineLevelInput" min="1" step="1" value="1" title="Level">
-          </div>
-        </div>
-        <div class="card-badge" id="engineBadge">Lv 1</div>
-      </div>
-    </div>
-
     <div class="builder-toolbar">
       <button class="primary" onclick="addWagon()">+ Add wagon</button>
-      <span class="count" id="wagonCount">0 wagons</span>
+      <span class="count" id="wagonCount">0 items</span>
     </div>
 
     <div class="wagons-scroll">
@@ -544,9 +530,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-// Define the URL to your setups database file
 const GITHUB_SETUPS_URL = 'setups.json';
-// ---------- Model ----------
 const STORAGE_KEY = 'unrailed2_wagon_builder_state_v3';
 let uid = 1;
 const nextId = () => String(uid++);
@@ -558,16 +542,16 @@ let library = {
 };
 
 let engineChoice = { id: library.engine[0].id, level: 1 };
-let wagons = [];
+let trainUnits = [];
 
 const EXT_SLOTS = 12;
 let currentPickerTarget = null;
-let draggedWagonIndex = null;
+let draggedUnitIndex = null;
 
 // ---------- Persistence ----------
 function persist(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ uid, library, engineChoice, wagons }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ uid, library, engineChoice, wagons: trainUnits }));
   }catch(e){ /* ignore */ }
 }
 
@@ -580,18 +564,16 @@ function loadPersisted(){
     uid = data.uid || uid;
     library = data.library;
     engineChoice = data.engineChoice || engineChoice;
-    wagons = data.wagons || [];
+    trainUnits = data.wagons || [];
     return true;
   }catch(e){ return false; }
 }
 
 function clearSetup(){
-  if(confirm("Are you sure you want to clear the current wagon setup?")){
-    engineChoice = { id: library.engine[0] ? library.engine[0].id : '', level: 1 };
-    wagons = [];
+  if(confirm("Are you sure you want to clear the current setup?")){
+    trainUnits = [{ isEngine: true, engineId: library.engine[0] ? library.engine[0].id : '', level: 1, id: nextId() }];
     persist();
-    renderEngine();
-    renderWagons();
+    renderUnits();
   }
 }
 
@@ -630,7 +612,7 @@ function exportSetup(){
   if (userSetupName === null) return;
 
   const sanitizedName = userSetupName.trim().replace(/[^a-z0-9_\-]/gi, '_') || 'unrailed2-wagon-setup';
-  downloadJson(`${sanitizedName}.json`, { engineChoice, wagons });
+  downloadJson(`${sanitizedName}.json`, { engineChoice, wagons: trainUnits });
 }
 
 function importSetup(file){
@@ -640,18 +622,15 @@ function importSetup(file){
     try{
       const data = JSON.parse(e.target.result);
       if(!data || !('wagons' in data)) throw new Error('bad file');
-      engineChoice = data.engineChoice || { id:'', level:1 };
-      wagons = data.wagons || [];
+      trainUnits = data.wagons || [];
       persist();
-      renderEngine();
-      renderWagons();
+      renderUnits();
     }catch(err){ alert('Could not read setup file.'); }
   };
   reader.readAsText(file);
 }
 
 // ---------- Share Code Export & Import ----------
-// ---------- 8-Character Share Code Export & Import (Vercel API) ----------
 function generate8Charcode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -661,13 +640,9 @@ function generate8Charcode() {
   return code;
 }
 
-// Export function: sends code + payload to /api/save-setup
 async function exportShareCode() {
   const code = generate8Charcode();
-  const buildPayload = {
-    engineChoice,
-    wagons
-  };
+  const buildPayload = { engineChoice, wagons: trainUnits };
 
   try {
     const res = await fetch('/api/save-setup', {
@@ -677,31 +652,23 @@ async function exportShareCode() {
     });
 
     const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to save setup');
 
-    if (!res.ok) {
-      throw new Error(result.error || 'Failed to save setup');
-    }
-
-    // Copy the code to clipboard automatically
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(code);
     }
-
-    alert(`Setup automatically saved!\n\nYour 8-character share code is: ${code}\nIt can take multiple minutes for the code to become accessible.\n(Copied to clipboard)`);
-
+    alert(`Setup automatically saved!\n\nYour 8-character share code is: ${code}\n(Copied to clipboard)`);
   } catch (err) {
     console.error(err);
     alert(`Could not automatically save setup: ${err.message}`);
   }
 }
 
-// Import function: fetches setups.json directly
 async function importShareCode() {
   let code = prompt("Enter your 8-character setup code (e.g. X7K9P2M4):");
   if (!code || !code.trim()) return;
 
   code = code.trim().toUpperCase();
-
   if (!/^[A-Z0-9]{8}$/.test(code)) {
     alert("Invalid code format! Code must be exactly 8 capital letters and numbers.");
     return;
@@ -709,25 +676,18 @@ async function importShareCode() {
 
   try {
     const response = await fetch(`${GITHUB_SETUPS_URL}?t=${Date.now()}`);
-    
-    if (!response.ok) {
-      throw new Error(`Server returned status ${response.status} (${response.statusText})`);
-    }
+    if (!response.ok) throw new Error(`Server returned status ${response.status}`);
 
     const database = await response.json();
     const data = database[code];
-
     if (!data) {
-      alert(`Code "${code}" was not found, if it was created recently it can take a few minutes to become accessible.`);
+      alert(`Code "${code}" was not found.`);
       return;
     }
 
-    engineChoice = data.engineChoice || { id: '', level: 1 };
-    wagons = data.wagons || [];
-
+    trainUnits = data.wagons || [];
     persist();
-    renderEngine();
-    renderWagons();
+    renderUnits();
     alert(`Setup "${code}" loaded successfully!`);
   } catch (err) {
     console.error("Import Error Details:", err);
@@ -735,7 +695,6 @@ async function importShareCode() {
   }
 }
 
-// ---------- Auto-load Library File ----------
 async function autoLoadLibrary(){
   try{
     const res = await fetch('unrailed2-image-library.json?t=' + Date.now(), { cache: 'no-store' });
@@ -746,10 +705,9 @@ async function autoLoadLibrary(){
       library = data.library;
       persist();
     }
-  }catch(e){ /* ignore if not present */ }
+  }catch(e){ /* ignore */ }
 }
 
-// ---------- Helpers ----------
 function findById(type, id){ return library[type].find(item => item.id === id); }
 function itemLabel(item){ return item.type; }
 
@@ -773,13 +731,11 @@ function buildPreview(container, type, id){
   container.appendChild(img);
 }
 
-// ---------- Library rendering ----------
 function renderLibrary(){
   renderLibCol('engine', document.getElementById('libEngine'));
   renderLibCol('wagon', document.getElementById('libWagon'));
   renderLibCol('ext', document.getElementById('libExt'));
-  renderEngine();
-  renderWagons();
+  renderUnits();
   persist();
 }
 
@@ -794,8 +750,7 @@ function renderLibCol(libType, container){
     typeInput.placeholder = 'Type';
     typeInput.addEventListener('input', (e) => {
       item.type = e.target.value;
-      renderEngine();
-      renderWagons();
+      renderUnits();
       persist();
     });
 
@@ -805,8 +760,7 @@ function renderLibCol(libType, container){
     pathInput.placeholder = 'images/example.png';
     pathInput.addEventListener('input', (e) => {
       item.path = e.target.value;
-      renderEngine();
-      renderWagons();
+      renderUnits();
       persist();
     });
 
@@ -832,8 +786,8 @@ function addLibRow(libType){
 }
 
 // ---------- Visual Icon Picker ----------
-function openPicker(category, wagonId = null, extIndex = null){
-  currentPickerTarget = { category, wagonId, extIndex };
+function openPicker(category, unitId = null, extIndex = null){
+  currentPickerTarget = { category, unitId, extIndex };
   const modal = document.getElementById('pickerModal');
   const title = document.getElementById('pickerTitle');
   const grid = document.getElementById('pickerGrid');
@@ -874,44 +828,34 @@ function openPicker(category, wagonId = null, extIndex = null){
     grid.appendChild(itemEl);
   });
 
-  if(items.length === 0 && category !== 'ext'){
-    grid.innerHTML = `<div style="color:var(--muted); font-size:13px; grid-column:1/-1; text-align:center; padding: 20px 0;">No items found in library. Add them above!</div>`;
-  }
-
   modal.classList.add('open');
 }
 
 function getSelectedId(){
   if(!currentPickerTarget) return null;
-  const { category, wagonId, extIndex } = currentPickerTarget;
-  if(category === 'engine') return engineChoice.id;
-  if(category === 'wagon'){
-    const w = wagons.find(w => w.id === wagonId);
-    return w ? w.wagonId : null;
-  }
-  if(category === 'ext'){
-    const w = wagons.find(w => w.id === wagonId);
-    return (w && extIndex !== null) ? w.exts[extIndex] : null;
-  }
+  const { category, unitId, extIndex } = currentPickerTarget;
+  const unit = trainUnits.find(u => u.id === unitId);
+  if(!unit) return null;
+
+  if(category === 'engine') return unit.engineId;
+  if(category === 'wagon') return unit.wagonId;
+  if(category === 'ext') return extIndex !== null ? unit.exts[extIndex] : null;
   return null;
 }
 
 function selectPickerItem(id){
   if(!currentPickerTarget) return;
-  const { category, wagonId, extIndex } = currentPickerTarget;
-  if(category === 'engine'){
-    engineChoice.id = id;
-    renderEngine();
-  } else if(category === 'wagon'){
-    const w = wagons.find(w => w.id === wagonId);
-    if(w) w.wagonId = id;
-    renderWagons();
-  } else if(category === 'ext'){
-    const w = wagons.find(w => w.id === wagonId);
-    if(w && extIndex !== null) w.exts[extIndex] = id;
-    renderWagons();
+  const { category, unitId, extIndex } = currentPickerTarget;
+  const unit = trainUnits.find(u => u.id === unitId);
+  
+  if(unit){
+    if(category === 'engine') unit.engineId = id;
+    else if(category === 'wagon') unit.wagonId = id;
+    else if(category === 'ext' && extIndex !== null) unit.exts[extIndex] = id;
   }
+  
   persist();
+  renderUnits();
   closePicker();
 }
 
@@ -924,62 +868,39 @@ function closePickerOnOverlay(e){
   if(e.target.id === 'pickerModal') closePicker();
 }
 
-// ---------- Engine ----------
-function renderEngine(){
-  const currentItem = findById('engine', engineChoice.id);
-  const typeBtn = document.getElementById('engineTypeBtn');
-  if(typeBtn){
-    typeBtn.textContent = currentItem ? currentItem.type : '— select engine —';
-  }
-
-  const levelInput = document.getElementById('engineLevelInput');
-  levelInput.value = engineChoice.level || 1;
-  levelInput.oninput = (e) => {
-    engineChoice.level = e.target.value;
-    document.getElementById('engineBadge').textContent = 'Lv ' + (engineChoice.level || '—');
-    persist();
-    renderOutput();
-  };
-
-  buildPreview(document.getElementById('enginePreview'), 'engine', engineChoice.id);
-  document.getElementById('engineBadge').textContent = 'Lv ' + (engineChoice.level || '—');
-  renderOutput();
-}
-
-// ---------- Wagons & Drag-and-Drop ----------
+// ---------- Train Units & Drag-and-Drop ----------
 function addWagon(){
-  wagons.push({ id: nextId(), wagonId: '', level: 1, exts: new Array(EXT_SLOTS).fill('') });
-  renderWagons();
+  trainUnits.push({ id: nextId(), isEngine: false, wagonId: '', level: 1, exts: new Array(EXT_SLOTS).fill('') });
+  renderUnits();
   persist();
 }
 
-function removeWagon(id){
-  wagons = wagons.filter(w => w.id !== id);
-  renderWagons();
+function removeUnit(id){
+  trainUnits = trainUnits.filter(u => u.id !== id);
+  renderUnits();
   persist();
 }
 
-function renderWagons(){
+function renderUnits(){
   const row = document.getElementById('wagonsRow');
   row.innerHTML = '';
-  document.getElementById('wagonCount').textContent =
-    wagons.length + (wagons.length === 1 ? ' wagon' : ' wagons');
+  document.getElementById('wagonCount').textContent = trainUnits.length + ' item(s)';
 
-  wagons.forEach((w, idx) => {
+  trainUnits.forEach((u, idx) => {
     const card = document.createElement('div');
-    card.className = 'wagon-card';
+    card.className = u.isEngine ? 'engine-card' : 'wagon-card';
     card.setAttribute('draggable', 'true');
 
     card.addEventListener('dragstart', (e) => {
-      draggedWagonIndex = idx;
+      draggedUnitIndex = idx;
       e.dataTransfer.effectAllowed = 'move';
       card.classList.add('dragging');
     });
 
     card.addEventListener('dragend', () => {
-      draggedWagonIndex = null;
+      draggedUnitIndex = null;
       card.classList.remove('dragging');
-      document.querySelectorAll('.wagon-card').forEach(c => c.classList.remove('drag-over'));
+      document.querySelectorAll('.wagon-card, .engine-card').forEach(c => c.classList.remove('drag-over'));
     });
 
     card.addEventListener('dragover', (e) => {
@@ -995,10 +916,10 @@ function renderWagons(){
     card.addEventListener('drop', (e) => {
       e.preventDefault();
       card.classList.remove('drag-over');
-      if (draggedWagonIndex !== null && draggedWagonIndex !== idx) {
-        const [dragged] = wagons.splice(draggedWagonIndex, 1);
-        wagons.splice(idx, 0, dragged);
-        renderWagons();
+      if (draggedUnitIndex !== null && draggedUnitIndex !== idx) {
+        const [dragged] = trainUnits.splice(draggedUnitIndex, 1);
+        trainUnits.splice(idx, 0, dragged);
+        renderUnits();
         persist();
       }
     });
@@ -1008,23 +929,23 @@ function renderWagons(){
 
     const titleArea = document.createElement('div');
     titleArea.className = 'wagon-title-area';
-    titleArea.title = 'Click & drag to reorder wagon';
-    titleArea.innerHTML = `<span class="drag-handle">⠿</span><h3>Wagon ${idx + 1}</h3>`;
+    titleArea.title = 'Click & drag to reorder unit';
+    titleArea.innerHTML = `<span class="drag-handle">⠿</span><h3>${u.isEngine ? 'Engine' : 'Wagon ' + (idx + 1)}</h3>`;
 
     const controls = document.createElement('div');
     controls.className = 'wagon-controls';
 
     const badge = document.createElement('div');
     badge.className = 'card-badge-inline';
-    badge.textContent = 'Lv ' + (w.level || '—');
+    badge.textContent = 'Lv ' + (u.level || '—');
 
     const delBtn = document.createElement('button');
-    delBtn.className = 'icon-btn wagon-del';
+    delBtn.className = 'icon-btn';
     delBtn.textContent = '✕';
-    delBtn.title = 'Remove wagon';
+    delBtn.title = 'Remove item';
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      removeWagon(w.id);
+      removeUnit(u.id);
     });
 
     controls.appendChild(badge);
@@ -1037,26 +958,26 @@ function renderWagons(){
     top.className = 'wagon-top';
 
     const preview = document.createElement('div');
-    preview.className = 'slot-preview clickable';
-    preview.title = 'Click to choose wagon type';
-    preview.onclick = () => openPicker('wagon', w.id);
-    buildPreview(preview, 'wagon', w.wagonId);
+    preview.className = 'slot-preview clickable' + (u.isEngine ? ' engine-slot' : '');
+    preview.title = u.isEngine ? 'Click to choose engine type' : 'Click to choose wagon type';
+    preview.onclick = () => openPicker(u.isEngine ? 'engine' : 'wagon', u.id);
+    buildPreview(preview, u.isEngine ? 'engine' : 'wagon', u.isEngine ? u.engineId : u.wagonId);
 
     const metaWrap = document.createElement('div');
     metaWrap.style.flex = '1';
     metaWrap.style.minWidth = '0';
 
-    const currentWagon = findById('wagon', w.wagonId);
+    const itemObj = findById(u.isEngine ? 'engine' : 'wagon', u.isEngine ? u.engineId : u.wagonId);
     
     const typeLabel = document.createElement('label');
     typeLabel.className = 'meta-label';
-    typeLabel.textContent = 'Wagon Type';
+    typeLabel.textContent = u.isEngine ? 'Engine Type' : 'Wagon Type';
 
     const typeBtn = document.createElement('button');
     typeBtn.type = 'button';
     typeBtn.className = 'select-btn';
-    typeBtn.textContent = currentWagon ? currentWagon.type : '— select wagon —';
-    typeBtn.onclick = () => openPicker('wagon', w.id);
+    typeBtn.textContent = itemObj ? itemObj.type : '— select type —';
+    typeBtn.onclick = () => openPicker(u.isEngine ? 'engine' : 'wagon', u.id);
 
     const levelLabel = document.createElement('label');
     levelLabel.className = 'meta-label';
@@ -1068,11 +989,10 @@ function renderWagons(){
     levelInput.min = '1';
     levelInput.step = '1';
     levelInput.className = 'level-input';
-    levelInput.value = w.level || 1;
-    levelInput.title = 'Level';
+    levelInput.value = u.level || 1;
     levelInput.addEventListener('input', (e) => {
-      w.level = e.target.value;
-      badge.textContent = 'Lv ' + (w.level || '—');
+      u.level = e.target.value;
+      badge.textContent = 'Lv ' + (u.level || '—');
       persist();
       renderOutput();
     });
@@ -1086,28 +1006,30 @@ function renderWagons(){
     top.appendChild(metaWrap);
     card.appendChild(top);
 
-    const grid = document.createElement('div');
-    grid.className = 'ext-grid';
-    for(let i = 0; i < EXT_SLOTS; i++){
-      const slot = document.createElement('div');
-      slot.className = 'ext-slot';
-      slot.title = `Click to change slot ${i+1}`;
-      slot.onclick = () => openPicker('ext', w.id, i);
+    if(!u.isEngine){
+      const grid = document.createElement('div');
+      grid.className = 'ext-grid';
+      for(let i = 0; i < EXT_SLOTS; i++){
+        const slot = document.createElement('div');
+        slot.className = 'ext-slot';
+        slot.title = `Click to change slot ${i+1}`;
+        slot.onclick = () => openPicker('ext', u.id, i);
 
-      const sPreview = document.createElement('div');
-      sPreview.className = 'slot-preview';
-      buildPreview(sPreview, 'ext', w.exts[i]);
+        const sPreview = document.createElement('div');
+        sPreview.className = 'slot-preview';
+        buildPreview(sPreview, 'ext', u.exts[i]);
 
-      const extItem = findById('ext', w.exts[i]);
-      const extName = document.createElement('div');
-      extName.className = 'ext-name';
-      extName.textContent = extItem ? extItem.type : 'Empty';
+        const extItem = findById('ext', u.exts[i]);
+        const extName = document.createElement('div');
+        extName.className = 'ext-name';
+        extName.textContent = extItem ? extItem.type : 'Empty';
 
-      slot.appendChild(sPreview);
-      slot.appendChild(extName);
-      grid.appendChild(slot);
+        slot.appendChild(sPreview);
+        slot.appendChild(extName);
+        grid.appendChild(slot);
+      }
+      card.appendChild(grid);
     }
-    card.appendChild(grid);
 
     row.appendChild(card);
   });
@@ -1121,69 +1043,57 @@ function renderOutput(){
   if(!out) return;
   out.innerHTML = '';
 
-  if(wagons.length === 0 && !engineChoice.id){
-    out.innerHTML = '<div class="empty-state">Nothing to show yet — pick an engine and add a wagon above.</div>';
+  if(trainUnits.length === 0){
+    out.innerHTML = '<div class="empty-state">Nothing to show yet — add an engine or a wagon above.</div>';
     return;
   }
 
-  const engineCard = document.createElement('div');
-  engineCard.className = 'output-card output-engine';
-  const engineBadge = document.createElement('div');
-  engineBadge.className = 'card-badge';
-  engineBadge.textContent = 'Lv ' + (engineChoice.level || '—');
-  const enginePrev = document.createElement('div');
-  enginePrev.className = 'slot-preview';
-  buildPreview(enginePrev, 'engine', engineChoice.id);
-  const engineLbl = document.createElement('div');
-  engineLbl.className = 'card-label';
-  engineLbl.textContent = 'Engine';
-  engineCard.appendChild(engineBadge);
-  engineCard.appendChild(enginePrev);
-  engineCard.appendChild(engineLbl);
-  out.appendChild(engineCard);
-
-  wagons.forEach((w, idx) => {
-    const coupler = document.createElement('div');
-    coupler.className = 'coupler';
-    out.appendChild(coupler);
-
-    const wCard = document.createElement('div');
-    wCard.className = 'output-card output-wagon';
-
-    const wBadge = document.createElement('div');
-    wBadge.className = 'card-badge';
-    wBadge.textContent = 'Lv ' + (w.level || '—');
-    wCard.appendChild(wBadge);
-
-    const wPrev = document.createElement('div');
-    wPrev.className = 'slot-preview';
-    buildPreview(wPrev, 'wagon', w.wagonId);
-    wCard.appendChild(wPrev);
-
-    const wLbl = document.createElement('div');
-    wLbl.className = 'card-label';
-    wLbl.textContent = 'Wagon ' + (idx + 1);
-    wCard.appendChild(wLbl);
-
-    const extGrid = document.createElement('div');
-    extGrid.className = 'output-ext-grid';
-    extGrid.style.marginTop = '8px';
-    for(let i = 0; i < EXT_SLOTS; i++){
-      const item = w.exts[i] ? findById('ext', w.exts[i]) : null;
-      if(!item) continue;
-
-      const slot = document.createElement('div');
-      slot.className = 'output-ext-slot';
-      const img = document.createElement('img');
-      img.src = item.path;
-      img.alt = item.type;
-      img.addEventListener('error', () => { slot.remove(); });
-      slot.appendChild(img);
-      extGrid.appendChild(slot);
+  trainUnits.forEach((u, idx) => {
+    if(idx > 0){
+      const coupler = document.createElement('div');
+      coupler.className = 'coupler';
+      out.appendChild(coupler);
     }
-    if(extGrid.children.length) wCard.appendChild(extGrid);
 
-    out.appendChild(wCard);
+    const card = document.createElement('div');
+    card.className = 'output-card ' + (u.isEngine ? 'output-engine' : 'output-wagon');
+
+    const badge = document.createElement('div');
+    badge.className = 'card-badge';
+    badge.textContent = 'Lv ' + (u.level || '—');
+    card.appendChild(badge);
+
+    const prev = document.createElement('div');
+    prev.className = 'slot-preview';
+    buildPreview(prev, u.isEngine ? 'engine' : 'wagon', u.isEngine ? u.engineId : u.wagonId);
+    card.appendChild(prev);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'card-label';
+    lbl.textContent = u.isEngine ? 'Engine' : 'Wagon ' + (idx + 1);
+    card.appendChild(lbl);
+
+    if(!u.isEngine && u.exts){
+      const extGrid = document.createElement('div');
+      extGrid.className = 'output-ext-grid';
+      extGrid.style.marginTop = '8px';
+      for(let i = 0; i < EXT_SLOTS; i++){
+        const item = u.exts[i] ? findById('ext', u.exts[i]) : null;
+        if(!item) continue;
+
+        const slot = document.createElement('div');
+        slot.className = 'output-ext-slot';
+        const img = document.createElement('img');
+        img.src = item.path;
+        img.alt = item.type;
+        img.addEventListener('error', () => { slot.remove(); });
+        slot.appendChild(img);
+        extGrid.appendChild(slot);
+      }
+      if(extGrid.children.length) card.appendChild(extGrid);
+    }
+
+    out.appendChild(card);
   });
 }
 
@@ -1212,7 +1122,7 @@ async function downloadOutputPng(evt){
     link.click();
   }catch(err){
     console.error('PNG export failed:', err);
-    alert('Could not export PNG. See console for details.');
+    alert('Could not export PNG.');
   }finally{
     if(btn){ btn.textContent = originalLabel; btn.disabled = false; }
   }
@@ -1221,7 +1131,8 @@ async function downloadOutputPng(evt){
 // ---------- Init ----------
 async function init(){
   const restored = loadPersisted();
-  if(!restored && wagons.length === 0){
+  if(!restored && trainUnits.length === 0){
+    trainUnits = [{ id: nextId(), isEngine: true, engineId: library.engine[0] ? library.engine[0].id : '', level: 1 }];
     addWagon();
   }
   await autoLoadLibrary();
